@@ -1,0 +1,138 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+    color: #333;
+    line-height: 1.6;
+}
+
+header {
+    background: #333;
+    color: #fff;
+    padding: 1rem 0;
+    text-align: center;
+}
+
+header h1 {
+    margin: 0;
+}
+
+main {
+    padding: 1rem;
+    max-width: 900px; /* Increased max-width for better table display */
+    margin: 20px auto 100px auto; /* Added more bottom margin due to fixed footer */
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+footer {
+    text-align: center;
+    padding: 1rem 0;
+    background: #333;
+    color: #fff;
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+}
+
+/* --- Controls --- */
+.controls-container {
+    display: flex;
+    flex-direction: column; /* Stack season select above stat buttons */
+    gap: 15px;
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f9f9f9;
+    border-radius: 6px;
+    border: 1px solid #eee;
+}
+
+.select-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#season-select {
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1em;
+    background-color: white;
+}
+
+#stats-buttons-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px; /* Spacing between buttons */
+}
+
+.stat-button {
+    padding: 8px 15px;
+    font-size: 0.9em;
+    color: white;
+    background-color: #007bff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.stat-button:hover {
+    background-color: #0056b3;
+}
+
+/* --- Rankings Table --- */
+#rankings-table-container {
+    margin-top: 20px;
+}
+
+#current-ranking-title {
+    margin-bottom: 10px;
+    font-size: 1.5em;
+    color: #333;
+}
+
+#rankings-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+#rankings-table th, #rankings-table td {
+    border: 1px solid #ddd;
+    padding: 10px 12px; /* Increased padding */
+    text-align: left;
+    font-size: 0.95em;
+}
+
+#rankings-table th {
+    background-color: #007bff;
+    color: white;
+    font-weight: bold;
+}
+
+#rankings-table tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+#rankings-table tbody tr:hover {
+    background-color: #f1f1f1;
+}
+
+.hidden {
+    display: none;
+}
+
+#no-data-message {
+    padding: 15px;
+    background-color: #fff3cd;
+    border: 1px solid #ffeeba;
+    color: #856404;
+    border-radius: 4px;
+    margin-top: 15px;
+    text-align: center;
+}

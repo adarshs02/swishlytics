@@ -1,0 +1,60 @@
+# Node.js
+node_modules/
+.npm
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+.venv/
+venv/
+ENV/
+env/
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Data files
+# Ignore generated CSV files in specific data directories
+# but allow .gitkeep files to preserve directory structure.
+data/*.csv
+data/combined_z_scores_by_season/*.csv
+data/total_fantasy_scores_by_season/*.csv
+data/z_scores_by_season/**/*.csv
+!data/**/.gitkeep
+
+# If you have other data files like JSON that should be tracked, list them here or adjust rules.
+
+# Logs
+logs/
+*.log
+
+# Build artifacts
+dist/
+build/
+
+# Coverage reports
+coverage/
+.nyc_output/
+
+# Environment variables
+.env
+.env.*
+!.env.example

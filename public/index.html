@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fantasy Basketball Player Predictor</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <h1>Fantasy Basketball Player Predictor</h1>
+    </header>
+    <main>
+        <div class="controls-container">
+            <div class="select-container">
+                <label for="season-select">Select Season:</label>
+                <select id="season-select">
+                    <option value="">-- Select a Season --</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="rankings-table-container">
+            <h2 id="current-ranking-title">Player Total Fantasy Rankings</h2>
+            <table id="rankings-table">
+                <thead>
+                    <tr>
+                        <th>Overall Rank</th>
+                        <th>Player Name</th>
+                        <th>PTS</th>
+                        <th>REB</th>
+                        <th>AST</th>
+                        <th>STL</th>
+                        <th>BLK</th>
+                        <th>FG%</th>
+                        <th>3P%</th>
+                        <th>FT%</th>
+                        <th>TOV</th>
+                        <th>Total Z-Score</th>
+                    </tr>
+                </thead>
+                <tbody id="rankings-tbody">
+                    <!-- Player ranking data will be dynamically inserted here -->
+                </tbody>
+            </table>
+            <p id="no-data-message" class="hidden">No data available for the selected criteria.</p>
+        </div>
+    </main>
+    <footer>
+        <p>&copy; 2025 Fantasy Player Predictor</p>
+    </footer>
+    <script src="js/main.js"></script>
+</body>
+</html>
