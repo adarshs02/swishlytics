@@ -61,7 +61,7 @@ A Node.js application with a Python backend to help predict fantasy basketball p
     ```
 4.  Run Python scripts as needed, for example:
     ```bash
-    python data_processing.py
+    python fetch_nba_data.py
     ```
 
 ## How to Use

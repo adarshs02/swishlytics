@@ -1,138 +1,180 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+
+/* CSS Variables for Theme - Will be refined based on Light/Dark choice */
+:root {
+    /* Minimalistic Light Theme Palette */
+    --bg-primary: #f8f9fa;         /* Very light gray for the body background */
+    --bg-secondary: #ffffff;       /* White for content cards, main area */
+    --bg-header-footer: #ffffff;   /* White for header and footer */
+    
+    --color-accent: #4A90E2;       /* A modern, soft blue for accents */
+    --color-accent-hover: #357ABD; /* A darker shade of the accent for hover states */
+
+    --text-primary: #212529;       /* Standard dark gray for primary text */
+    --text-secondary: #6c757d;     /* Lighter gray for secondary text (e.g., footer) */
+    --text-accent: var(--color-accent);
+    --text-on-accent: #ffffff;     /* White text for use on accent-colored backgrounds */
+
+    --border-primary: #dee2e6;     /* Light gray for borders and dividers */
+    --border-focus: var(--color-accent);
+
+    --shadow-soft: 0 2px 4px rgba(0,0,0,0.075);
+    --shadow-medium: 0 4px 8px rgba(0,0,0,0.1);
+
+    --font-main: 'Roboto', 'Segoe UI', Helvetica, Arial, sans-serif;
+}
+
 body {
-    font-family: Arial, sans-serif;
+    font-family: var(--font-main);
     margin: 0;
     padding: 0;
-    background-color: #f4f4f4;
-    color: #333;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
     line-height: 1.6;
+    padding-bottom: 70px; /* Space for footer */
+    transition: background-color 0.3s, color 0.3s;
 }
 
 header {
-    background: #333;
-    color: #fff;
+    background: var(--bg-header-footer);
+    color: var(--text-primary);
     padding: 1rem 0;
     text-align: center;
+    border-bottom: 1px solid var(--border-primary);
+    box-shadow: var(--shadow-soft);
 }
 
 header h1 {
     margin: 0;
+    font-size: 1.8em;
+    font-weight: 500; /* Medium weight for a modern feel */
 }
 
 main {
-    padding: 1rem;
-    max-width: 900px; /* Increased max-width for better table display */
-    margin: 20px auto 100px auto; /* Added more bottom margin due to fixed footer */
-    background: #fff;
+    padding: 1.5rem;
+    max-width: 960px;
+    margin: 25px auto;
+    background: var(--bg-secondary);
     border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    border: 1px solid var(--border-primary);
+    box-shadow: var(--shadow-medium);
 }
 
 footer {
     text-align: center;
     padding: 1rem 0;
-    background: #333;
-    color: #fff;
+    background: var(--bg-header-footer);
+    color: var(--text-secondary);
     position: fixed;
     bottom: 0;
     width: 100%;
+    font-size: 0.9em;
+    border-top: 1px solid var(--border-primary);
 }
 
 /* --- Controls --- */
 .controls-container {
     display: flex;
-    flex-direction: column; /* Stack season select above stat buttons */
-    gap: 15px;
-    margin-bottom: 20px;
-    padding: 15px;
-    background-color: #f9f9f9;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background-color: var(--bg-secondary);
     border-radius: 6px;
-    border: 1px solid #eee;
+    border: 1px solid var(--border-primary);
 }
 
 .select-container {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 0.75rem;
+}
+
+.select-container label {
+    color: var(--text-primary);
+    font-weight: 500;
+    font-size: 1em;
 }
 
 #season-select {
-    padding: 8px 12px;
-    border: 1px solid #ccc;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border-primary);
     border-radius: 4px;
     font-size: 1em;
-    background-color: white;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    flex-grow: 1; /* Allow select to take available space */
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+#season-select:focus {
+    outline: none;
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 0.2rem rgba(var(--color-accent), 0.25); /* Bootstrap-like focus */
 }
 
 #stats-buttons-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px; /* Spacing between buttons */
-}
-
-.stat-button {
-    padding: 8px 15px;
-    font-size: 0.9em;
-    color: white;
-    background-color: #007bff;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.2s ease-in-out;
-}
-
-.stat-button:hover {
-    background-color: #0056b3;
+    display: none; /* Still hidden */
 }
 
 /* --- Rankings Table --- */
 #rankings-table-container {
-    margin-top: 20px;
+    margin-top: 1.5rem;
 }
 
 #current-ranking-title {
-    margin-bottom: 10px;
+    margin-bottom: 1rem;
     font-size: 1.5em;
-    color: #333;
+    color: var(--text-primary);
+    font-weight: 500;
+    text-align: center;
 }
 
 #rankings-table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 10px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-top: 1rem;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: var(--shadow-soft);
 }
 
 #rankings-table th, #rankings-table td {
-    border: 1px solid #ddd;
-    padding: 10px 12px; /* Increased padding */
+    border: 1px solid var(--border-primary);
+    padding: 0.75rem 1rem;
     text-align: left;
     font-size: 0.95em;
 }
 
 #rankings-table th {
-    background-color: #007bff;
-    color: white;
-    font-weight: bold;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-weight: 500;
+    text-transform: capitalize;
 }
 
-#rankings-table tbody tr:nth-child(even) {
-    background-color: #f9f9f9;
+#rankings-table td {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
 }
 
-#rankings-table tbody tr:hover {
-    background-color: #f1f1f1;
+#rankings-table tbody tr:hover td {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
 }
 
+/* --- Utility --- */
 .hidden {
-    display: none;
+    display: none !important;
 }
 
 #no-data-message {
-    padding: 15px;
-    background-color: #fff3cd;
-    border: 1px solid #ffeeba;
-    color: #856404;
+    padding: 1rem;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    color: var(--text-secondary);
     border-radius: 4px;
-    margin-top: 15px;
+    margin-top: 1.5rem;
     text-align: center;
+    font-size: 1em;
 }
