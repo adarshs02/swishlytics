@@ -8,15 +8,15 @@ OUTPUT_DIR = os.path.join(os.path.dirname(__file__), '..', 'data', 'total_fantas
 # Define the z-score columns to be used for the total fantasy score
 # For stats where lower is better (e.g., Turnovers), we will invert their z-score contribution
 Z_SCORE_COLUMNS = {
-    'Points_ZScore': 1,      # Points
-    'Rebounds_ZScore': 1,    # Rebounds
-    'Assists_ZScore': 1,     # Assists
-    'Steals_ZScore': 1,      # Steals
-    'Blocks_ZScore': 1,      # Blocks
-    'FieldGoalPct_ZScore': 1,# Field Goal Percentage
-    'ThreePointPct_ZScore':1,# 3-Point Percentage
-    'FreeThrowPct_ZScore':1, # Free Throw Percentage
-    'Turnovers_ZScore': -1   # Turnovers (inverted)
+    'Points_ZScore':            1.195,   # Points
+    'Rebounds_ZScore':          1.267,   # Rebounds
+    'Assists_ZScore':           1.239,   # Assists
+    'Steals_ZScore':            1.322,   # Steals
+    'Blocks_ZScore':            1.426,   # Blocks
+    'FieldGoalPct_ZScore':      1.380,   # Field-Goal %
+    'ThreePointersMade_ZScore': 1.286,   # 3-Pointers Made
+    'FreeThrowPct_ZScore':      1.256,   # Free-Throw %
+    'Turnovers_ZScore':        -1.217    # Turnovers (penalty, stays negative)
 }
 
 def calculate_total_scores():

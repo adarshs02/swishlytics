@@ -281,7 +281,7 @@ export default function Home() {
                     <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'FreeThrowPct')}>{typeof player.FreeThrowPct === 'number' ? player.FreeThrowPct.toFixed(3) : 'N/A'}</td>
                     <td className="border-t px-4 py-2 font-bold">{typeof player.TrueShootingPct === 'number' ? player.TrueShootingPct.toFixed(3) : 'N/A'}</td>
                     <td className="border-t px-4 py-2 font-bold">{typeof player.UsageRate === 'number' ? (player.UsageRate * 100).toFixed(1) + '%' : 'N/A'}</td>
-                    <td className="border-t px-4 py-2 font-bold">{player.Total_Fantasy_ZScore}</td>
+                    <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'Total_Fantasy_ZScore')}>{typeof player.Total_Fantasy_ZScore === 'number' ? player.Total_Fantasy_ZScore.toFixed(2) : 'N/A'}</td>
                   </tr>
                 ))
               ) : (

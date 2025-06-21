@@ -16,7 +16,7 @@ STATS_TO_NORMALIZE = [
     'Steals',
     'Blocks',
     'FieldGoalPct',
-    'ThreePointPct',
+    'ThreePointersMade',
     'FreeThrowPct',
     'Turnovers'
 ]
