@@ -233,7 +233,7 @@ export default function Home() {
           <h2 id="current-ranking-title">
             {selectedSeason ? `Player Fantasy Rankings: ${selectedSeason}` : ''}
           </h2>
-          <p style={{ textAlign: 'center', fontStyle: 'italic', margin: '1rem 0' }}>Prediction engine coming soon</p>
+          <p style={{ textAlign: 'center', fontStyle: 'italic', margin: '1rem 0' }}>Prediction engine, matchup data, and more coming soon</p>
           <table id="rankings-table">
             <thead>
               <tr>
