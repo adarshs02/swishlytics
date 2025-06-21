@@ -52,24 +52,22 @@ header h1 {
 
 main {
     padding: 1.5rem;
-    max-width: 960px;
+    max-width: 1400px; /* Increased width to accommodate more columns */
     margin: 25px auto;
-    background: var(--bg-secondary);
     border-radius: 8px;
-    border: 1px solid var(--border-primary);
-    box-shadow: var(--shadow-medium);
+    /* Removed background and shadow to make the table blend with the page */
 }
 
 footer {
     text-align: center;
-    padding: 1rem 0;
+    padding: 0.1rem 0; /* Reduced padding */
     background: var(--bg-header-footer);
     color: var(--text-secondary);
     position: fixed;
     bottom: 0;
     width: 100%;
     font-size: 0.9em;
-    border-top: 1px solid var(--border-primary);
+    border-top: 1px solid #e9ecef; /* Lighter border color */
 }
 
 /* --- Controls --- */
@@ -141,9 +139,9 @@ footer {
 
 #rankings-table th, #rankings-table td {
     border: 1px solid var(--border-primary);
-    padding: 0.75rem 1rem;
+    padding: 0.4rem 0.5rem; /* Reduced padding */
     text-align: left;
-    font-size: 0.95em;
+    font-size: 0.8em; /* Reduced font size */
 }
 
 #rankings-table th {
