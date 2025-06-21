@@ -234,6 +234,7 @@ export default function Home() {
             {selectedSeason ? `Player Fantasy Rankings: ${selectedSeason}` : ''}
           </h2>
           <p style={{ textAlign: 'center', fontStyle: 'italic', margin: '1rem 0' }}>Prediction engine, matchup data, and more coming soon</p>
+          <div className="table-container">
           <table id="rankings-table">
             <thead>
               <tr>
@@ -295,7 +296,8 @@ export default function Home() {
                 <tr key="no-data"><td colSpan={21} style={{ textAlign: 'center' }}>No data available for this season.</td></tr>
               )}
             </tbody>
-          </table>
+            </table>
+        </div>
         </div>
       </main>
 

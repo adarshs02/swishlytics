@@ -120,6 +120,12 @@ footer {
     margin-top: 1.5rem;
 }
 
+.table-container {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch; /* Smoother scrolling on mobile */
+}
+
 #current-ranking-title {
     margin-bottom: 1rem;
     font-size: 1.5em;
