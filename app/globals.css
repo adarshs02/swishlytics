@@ -176,3 +176,11 @@ footer {
     text-align: center;
     font-size: 1em;
 }
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+#rankings-table .font-bold {
+  font-weight: 500;
+}
