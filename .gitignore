@@ -34,10 +34,10 @@ Thumbs.db
 # Data files
 # Ignore generated CSV files in specific data directories
 # but allow .gitkeep files to preserve directory structure.
-data/*.csv
-data/combined_z_scores_by_season/*.csv
-data/total_fantasy_scores_by_season/*.csv
-data/z_scores_by_season/**/*.csv
+# data/*.csv
+# data/combined_z_scores_by_season/*.csv
+# data/total_fantasy_scores_by_season/*.csv
+# data/z_scores_by_season/**/*.csv
 !data/**/.gitkeep
 
 # If you have other data files like JSON that should be tracked, list them here or adjust rules.
