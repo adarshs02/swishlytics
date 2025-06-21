@@ -50,6 +50,7 @@ Before running the web application, you need to generate the data files using th
     ```
 4.  Run the data processing pipeline in order:
     ```bash
+    python fetch_nba_data.py
     python collect_and_split_data.py
     python calculate_combined_z_scores_by_season.py
     python calculate_total_fantasy_scores.py
