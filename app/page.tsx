@@ -25,7 +25,7 @@ interface PlayerData {
   FreeThrowPct: number;
   TrueShootingPct: number;
   UsageRate: number;
-  Total_Fantasy_ZScore: number;
+  Swish_Score: number;
   Points_ZScore?: number;
   Rebounds_ZScore?: number;
   Assists_ZScore?: number;
@@ -144,8 +144,14 @@ export default function Home() {
   };
 
   const getStatCellStyle = (player: PlayerData, statKey: keyof PlayerData): React.CSSProperties => {
-    const zScoreKey = `${statKey}_ZScore`;
-    const zScore = player[zScoreKey] as number | undefined;
+    let zScore: number | undefined;
+
+    if (statKey === 'Swish_Score') {
+      zScore = player.Swish_Score as number | undefined;
+    } else {
+      const zScoreKey = `${statKey}_ZScore`;
+      zScore = player[zScoreKey] as number | undefined;
+    }
 
     if (zScore === undefined) {
       return {};
@@ -227,6 +233,7 @@ export default function Home() {
           <h2 id="current-ranking-title">
             {selectedSeason ? `Player Fantasy Rankings: ${selectedSeason}` : ''}
           </h2>
+          <p style={{ textAlign: 'center', fontStyle: 'italic', margin: '1rem 0' }}>Prediction engine coming soon</p>
           <table id="rankings-table">
             <thead>
               <tr>
@@ -250,7 +257,7 @@ export default function Home() {
                 <th className="px-4 py-2 text-left cursor-pointer" onClick={() => requestSort('FreeThrowPct')}>FT%{getSortIndicator('FreeThrowPct')}</th>
                 <th className="px-4 py-2 text-left cursor-pointer" onClick={() => requestSort('TrueShootingPct')}>TS%{getSortIndicator('TrueShootingPct')}</th>
                 <th className="px-4 py-2 text-left cursor-pointer" onClick={() => requestSort('UsageRate')}>USG%{getSortIndicator('UsageRate')}</th>
-                <th className="px-4 py-2 text-left cursor-pointer" onClick={() => requestSort('Total_Fantasy_ZScore')}>Total Z-Score{getSortIndicator('Total_Fantasy_ZScore')}</th>
+                <th className="px-4 py-2 text-left cursor-pointer" onClick={() => requestSort('Swish_Score')}>Swish Score{getSortIndicator('Swish_Score')}</th>
               </tr>
             </thead>
             <tbody>
@@ -281,7 +288,7 @@ export default function Home() {
                     <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'FreeThrowPct')}>{typeof player.FreeThrowPct === 'number' ? player.FreeThrowPct.toFixed(3) : 'N/A'}</td>
                     <td className="border-t px-4 py-2 font-bold">{typeof player.TrueShootingPct === 'number' ? player.TrueShootingPct.toFixed(3) : 'N/A'}</td>
                     <td className="border-t px-4 py-2 font-bold">{typeof player.UsageRate === 'number' ? (player.UsageRate * 100).toFixed(1) + '%' : 'N/A'}</td>
-                    <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'Total_Fantasy_ZScore')}>{typeof player.Total_Fantasy_ZScore === 'number' ? player.Total_Fantasy_ZScore.toFixed(2) : 'N/A'}</td>
+                    <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'Swish_Score')}>{typeof player.Swish_Score === 'number' ? player.Swish_Score.toFixed(2) : 'N/A'}</td>
                   </tr>
                 ))
               ) : (

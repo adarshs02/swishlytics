@@ -50,16 +50,16 @@ def calculate_total_scores():
                 print(f"  Error reading {input_filepath}: {e}")
                 continue
 
-            # Calculate Total Fantasy Z-Score
-            df['Total_Fantasy_ZScore'] = 0
+            # Calculate Swish Score
+            df['Swish_Score'] = 0
             for col, multiplier in Z_SCORE_COLUMNS.items():
                 if col in df.columns:
-                    df['Total_Fantasy_ZScore'] += df[col] * multiplier
+                    df['Swish_Score'] += df[col] * multiplier
                 else:
                     print(f"  Warning: Z-score column '{col}' not found in {filename}. Skipping for total score calculation.")
             
-            # Rank players based on Total_Fantasy_ZScore (descending)
-            df['Overall_Rank'] = df['Total_Fantasy_ZScore'].rank(method='min', ascending=False).astype(int)
+            # Rank players based on Swish_Score (descending)
+            df['Overall_Rank'] = df['Swish_Score'].rank(method='min', ascending=False).astype(int)
             
             # Sort by Overall_Rank
             df = df.sort_values(by='Overall_Rank')
