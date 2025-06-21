@@ -4,15 +4,22 @@
   "description": "Node.js app to predict fantasy basketball players to target or avoid.",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
   },
   "dependencies": {
-    "express": "^4.17.1",
-    "csv-parser": "^3.2.0"
+    "next": "^15.3.4",
+    "papaparse": "^5.5.3",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
   },
   "devDependencies": {
-    "nodemon": "^2.0.15"
+    "@types/node": "24.0.3",
+    "@types/react": "19.1.8",
+    "nodemon": "^2.0.15",
+    "typescript": "5.8.3"
   },
   "engines": {
     "node": ">=14.0.0"
