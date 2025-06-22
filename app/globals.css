@@ -190,3 +190,26 @@ footer {
 #rankings-table .font-bold {
   font-weight: 450;
 }
+
+/* --- Player Page Tables --- */
+.player-page-table {
+    min-width: 100%;
+    text-align: left;
+    font-size: 0.875rem; /* text-sm */
+    border-collapse: collapse; /* Ensures borders are connected */
+}
+
+.player-page-table thead {
+    background-color: #b0b2b7; /* bg-gray-700 */
+}
+
+.player-page-table th,
+.player-page-table td {
+    padding: 0.2rem; /* p-4 */
+    border: 1px solid #4B5563; /* A visible gray border */
+}
+
+.player-page-table tbody tr:hover {
+    background-color: rgba(55, 65, 81, 0.5); /* bg-gray-700/50 */
+}
+
