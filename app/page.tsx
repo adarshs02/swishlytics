@@ -20,6 +20,14 @@ interface PlayerData {
   turnovers: number;
   swish_score: number;
   swish_rank?: number;
+  usage_rate: number;
+  field_goals_made: number;
+  field_goal_attempts: number;
+  three_pointers_made: number;
+  three_point_attempts: number;
+  free_throws_made: number;
+  free_throw_attempts: number;
+  true_shooting_pct: number;
   points_z_score?: number;
   rebounds_z_score?: number;
   assists_z_score?: number;
@@ -29,6 +37,7 @@ interface PlayerData {
   field_goal_pct_z_score?: number;
   three_pointers_made_z_score?: number;
   free_throw_pct_z_score?: number;
+  true_shooting_pct_z_score?: number;
 }
 
 export default function Home() {
@@ -136,34 +145,44 @@ export default function Home() {
   };
 
   const getStatCellStyle = (player: PlayerData, statKey: keyof PlayerData): React.CSSProperties => {
-    const zScoreKey = `${statKey}_z_score`;
-    const zScore = player[zScoreKey];
+    let zScore;
+    if (statKey === 'swish_score') {
+      zScore = player.swish_score;
+    } else {
+      const zScoreKey = `${statKey}_z_score`;
+      zScore = player[zScoreKey];
+    }
 
     if (typeof zScore !== 'number') {
-      return {}; // No specific style if z-score is not available
+      return {}; // No style if z-score is not available
     }
 
     // Turnovers are bad, so we invert the color scale
     const isBadStat = statKey === 'turnovers';
     const effectiveZ = isBadStat ? -zScore : zScore;
 
-    // Clamp the z-score to a [-2, 2] range for a reasonable color scale
-    const clampedZ = Math.max(-2, Math.min(2, effectiveZ));
+    // Shift the z-score range to make green more exclusive
+    // An average score (z-score=0) will now be orange-yellow
+    const clampedZ = Math.max(-2, Math.min(4, effectiveZ));
 
-    // Normalize the clamped z-score to a [0, 1] range
-    const normalizedZ = (clampedZ + 2) / 4;
+    // Normalize the new clamped z-score to a [0, 1] range
+    const normalizedZ = (clampedZ + 2) / 6;
 
     // Interpolate the hue value from red (0) to green (120)
     const hue = normalizedZ * 120;
 
-    // Decrease the base lightness and increase the z-score multiplier for more intense colors
-    const lightness = 85 - Math.abs(zScore) * 9;
+    // Adjust lightness based on z-score
+    let lightness = 80 - Math.abs(zScore) * 7;
+
+    // Clamp lightness to prevent it from becoming too dark or too light
+    lightness = Math.max(50, Math.min(90, lightness));
 
     return {
-      backgroundColor: `hsl(${hue}, 90%, ${lightness}%)`, // Increased saturation to 90%
+      backgroundColor: `hsl(${hue}, 90%, ${lightness}%)`,
       color: 'black',
       fontWeight: 'bold',
     };
+
   };
 
   const getSortIndicator = (for_key: keyof PlayerData) => {
@@ -208,9 +227,9 @@ export default function Home() {
           </h2>
           <p style={{ textAlign: 'center', fontStyle: 'italic', margin: '1rem 0' }}>Prediction engine, matchup data, and more coming soon</p>
           <div className="table-container">
-            <table id="rankings-table">
-              <thead>
-                <tr className="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+            <table id="rankings-table" className="min-w-full bg-white">
+              <thead className="bg-gray-800 text-white">
+                <tr>
                   <th onClick={() => requestSort('swish_rank')} className="px-4 py-2 cursor-pointer">Rank {getSortIndicator('swish_rank')}</th>
                   <th onClick={() => requestSort('Player')} className="px-4 py-2 cursor-pointer">Player {getSortIndicator('Player')}</th>
                   <th onClick={() => requestSort('team')} className="px-4 py-2 cursor-pointer">Team {getSortIndicator('team')}</th>
@@ -222,17 +241,25 @@ export default function Home() {
                   <th onClick={() => requestSort('steals')} className="px-4 py-2 cursor-pointer">STL {getSortIndicator('steals')}</th>
                   <th onClick={() => requestSort('blocks')} className="px-4 py-2 cursor-pointer">BLK {getSortIndicator('blocks')}</th>
                   <th onClick={() => requestSort('turnovers')} className="px-4 py-2 cursor-pointer">TOV {getSortIndicator('turnovers')}</th>
+                  <th onClick={() => requestSort('three_pointers_made')} className="px-4 py-2 cursor-pointer">3PM {getSortIndicator('three_pointers_made')}</th>
+                  <th onClick={() => requestSort('three_point_attempts')} className="px-4 py-2 cursor-pointer">3PA {getSortIndicator('three_point_attempts')}</th>
+                  <th onClick={() => requestSort('field_goals_made')} className="px-4 py-2 cursor-pointer">FGM {getSortIndicator('field_goals_made')}</th>
+                  <th onClick={() => requestSort('field_goal_attempts')} className="px-4 py-2 cursor-pointer">FGA {getSortIndicator('field_goal_attempts')}</th>
+                  <th onClick={() => requestSort('free_throws_made')} className="px-4 py-2 cursor-pointer">FTM {getSortIndicator('free_throws_made')}</th>
+                  <th onClick={() => requestSort('free_throw_attempts')} className="px-4 py-2 cursor-pointer">FTA {getSortIndicator('free_throw_attempts')}</th>
+                  <th onClick={() => requestSort('usage_rate')} className="px-4 py-2 cursor-pointer">Usage {getSortIndicator('usage_rate')}</th>
+                  <th onClick={() => requestSort('true_shooting_pct')} className="px-4 py-2 cursor-pointer">TS% {getSortIndicator('true_shooting_pct')}</th>
                   <th onClick={() => requestSort('swish_score')} className="px-4 py-2 cursor-pointer">Swish Score {getSortIndicator('swish_score')}</th>
                 </tr>
               </thead>
               <tbody>
                 {isLoading ? (
-                  <tr key="loading"><td colSpan={12} style={{ textAlign: 'center' }}>Loading...</td></tr>
+                  <tr key="loading"><td colSpan={20} style={{ textAlign: 'center' }}>Loading...</td></tr>
                 ) : error ? (
-                  <tr key="error"><td colSpan={12} style={{ textAlign: 'center', color: 'red' }}>{error}</td></tr>
+                  <tr key="error"><td colSpan={20} style={{ textAlign: 'center', color: 'red' }}>{error}</td></tr>
                 ) : sortedRankings.length > 0 ? (
-                  sortedRankings.map((player, index) => (
-                    <tr key={player.Player}>
+                  sortedRankings.map((player) => (
+                    <tr key={player.player_id}>
                       <td className="border-t px-4 py-2 font-bold">{player.swish_rank}</td>
                       <td className="border-t px-4 py-2">
                         <Link href={`/player/${player.player_id}`} className="text-blue-600 hover:underline">
@@ -248,11 +275,19 @@ export default function Home() {
                       <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'steals')}>{formatStat(player.steals)}</td>
                       <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'blocks')}>{formatStat(player.blocks)}</td>
                       <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'turnovers')}>{formatStat(player.turnovers)}</td>
+                      <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'three_pointers_made')}>{formatStat(player.three_pointers_made)}</td>
+                      <td className="border-t px-4 py-2 font-bold">{formatStat(player.three_point_attempts)}</td>
+                      <td className="border-t px-4 py-2 font-bold">{formatStat(player.field_goals_made)}</td>
+                      <td className="border-t px-4 py-2 font-bold">{formatStat(player.field_goal_attempts)}</td>
+                      <td className="border-t px-4 py-2 font-bold">{formatStat(player.free_throws_made)}</td>
+                      <td className="border-t px-4 py-2 font-bold">{formatStat(player.free_throw_attempts)}</td>
+                      <td className="border-t px-4 py-2 font-bold">{typeof player.usage_rate === 'number' ? (player.usage_rate * 100).toFixed(1) + '%' : 'N/A'}</td>
+                      <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'true_shooting_pct')}>{typeof player.true_shooting_pct === 'number' ? (player.true_shooting_pct * 100).toFixed(1) + '%' : 'N/A'}</td>
                       <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'swish_score')}>{typeof player.swish_score === 'number' ? player.swish_score.toFixed(2) : 'N/A'}</td>
                     </tr>
                   ))
                 ) : (
-                  <tr key="no-data"><td colSpan={12} style={{ textAlign: 'center' }}>No data available for this season.</td></tr>
+                  <tr key="no-data"><td colSpan={20} style={{ textAlign: 'center' }}>No data available for this season.</td></tr>
                 )}
               </tbody>
             </table>
