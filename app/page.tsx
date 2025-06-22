@@ -19,6 +19,7 @@ interface PlayerData {
   blocks: number;
   turnovers: number;
   swish_score: number;
+  swish_rank?: number;
   points_z_score?: number;
   rebounds_z_score?: number;
   assists_z_score?: number;
@@ -36,7 +37,7 @@ export default function Home() {
   const [rankings, setRankings] = useState<PlayerData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sortConfig, setSortConfig] = useState<{ key: keyof PlayerData; direction: 'ascending' | 'descending' } | null>({ key: 'swish_score', direction: 'descending' });
+  const [sortConfig, setSortConfig] = useState<{ key: keyof PlayerData; direction: 'ascending' | 'descending' } | null>({ key: 'swish_rank', direction: 'ascending' });
 
   // Effect to fetch available seasons on initial load
   useEffect(() => {
@@ -74,7 +75,14 @@ export default function Home() {
           throw new Error(`Failed to fetch rankings for ${selectedSeason}`);
         }
         const data = await response.json();
-        setRankings(data);
+        // Sort by swish_score to determine rank
+        const rankedData = [...data].sort((a, b) => (b.swish_score || 0) - (a.swish_score || 0));
+        // Add the rank to each player object
+        const dataWithRank = rankedData.map((player, index) => ({
+          ...player,
+          swish_rank: index + 1,
+        }));
+        setRankings(dataWithRank);
       } catch (err) {
         setError(`Could not load ranking data for ${selectedSeason}.`);
         console.error(err);
@@ -203,7 +211,7 @@ export default function Home() {
             <table id="rankings-table">
               <thead>
                 <tr className="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
-                  <th className="px-4 py-2">Rank</th>
+                  <th onClick={() => requestSort('swish_rank')} className="px-4 py-2 cursor-pointer">Rank {getSortIndicator('swish_rank')}</th>
                   <th onClick={() => requestSort('Player')} className="px-4 py-2 cursor-pointer">Player {getSortIndicator('Player')}</th>
                   <th onClick={() => requestSort('team')} className="px-4 py-2 cursor-pointer">Team {getSortIndicator('team')}</th>
                   <th onClick={() => requestSort('games_played')} className="px-4 py-2 cursor-pointer">GP {getSortIndicator('games_played')}</th>
@@ -225,7 +233,7 @@ export default function Home() {
                 ) : sortedRankings.length > 0 ? (
                   sortedRankings.map((player, index) => (
                     <tr key={player.Player}>
-                      <td className="border-t px-4 py-2 font-bold">{index + 1}</td>
+                      <td className="border-t px-4 py-2 font-bold">{player.swish_rank}</td>
                       <td className="border-t px-4 py-2">
                         <Link href={`/player/${player.player_id}`} className="text-blue-600 hover:underline">
                           {player.Player}
