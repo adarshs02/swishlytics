@@ -1,44 +1,71 @@
 import { NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
-import Papa from 'papaparse';
+import { supabase } from '@/lib/supabase';
 
-export async function GET(request: Request) {
-  const url = new URL(request.url);
-  const pathnameParts = url.pathname.split('/');
-  // The pathname is /api/seasons/[season]/total_rankings, so the season is the 3rd to last part
-  const season = pathnameParts[pathnameParts.length - 2];
-  const filePath = path.join(
-    process.cwd(),
-    'data',
-    'total_fantasy_scores_by_season',
-    `${season}_total_scores.csv`
-  );
+export async function GET(_request: Request, { params }: { params: Promise<{ season: string }> }) {
+  const { season } = await params;
+
+  if (!season) {
+    return NextResponse.json({ error: 'Season parameter is required' }, { status: 400 });
+  }
 
   try {
-    const fileContent = await fs.readFile(filePath, 'utf-8');
-    
-    const parseResult = Papa.parse(fileContent, {
-      header: true,
-      dynamicTyping: true,
-      skipEmptyLines: true,
-      transformHeader: header => header.trim(),
-    });
+    const { data, error } = await supabase
+      .from('player_stats_by_season')
+      .select(`
+        player_id,
+        season,
+        team,
+        player_age,
+        games_played,
+        avg_minutes,
+        points,
+        rebounds,
+        assists,
+        steals,
+        blocks,
+        turnovers,
+        swish_score,
+        players ( full_name ),
+        points_z_score,
+        rebounds_z_score,
+        assists_z_score,
+        steals_z_score,
+        blocks_z_score,
+        turnovers_z_score,
+        field_goal_pct_z_score,
+        three_pointers_made_z_score,
+        free_throw_pct_z_score
+      `)
+      .eq('season', season)
+      .order('swish_score', { ascending: false });
 
-
-    const formattedData = (parseResult.data as any[]).map((row) => {
-      if (row && typeof row.Total_Fantasy_ZScore === 'number') {
-        row.Total_Fantasy_ZScore = parseFloat(row.Total_Fantasy_ZScore.toFixed(3));
-      }
-      return row;
-    });
-
-    return NextResponse.json(formattedData);
-  } catch (error: any) {
-    if (error.code === 'ENOENT') {
-      return NextResponse.json({ message: `Data for season ${season} not found.` }, { status: 404 });
+    if (error) {
+      console.error('Error fetching data from Supabase:', error);
+      throw new Error(error.message);
     }
-    console.error(`Error processing data for season ${season}:`, error);
-    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
+
+    if (!data) {
+        return NextResponse.json([]);
+    }
+
+    // The data from Supabase with a join is nested. We need to flatten it.
+    const flattenedData = data.map(item => {
+      // The Supabase client infers the joined 'players' table as an object, but to be safe with types we handle it carefully.
+      const playerName = (item.players as any)?.full_name || 'Unknown Player';
+      
+      // We create a new object, excluding the original 'players' nested object.
+      const { players, ...stats } = item;
+
+      return {
+        ...stats,
+        Player: playerName,
+      };
+    });
+
+    return NextResponse.json(flattenedData);
+
+  } catch (error) {
+    console.error(`Error fetching rankings for season ${season}:`, error);
+    return NextResponse.json({ error: `Failed to fetch rankings for season ${season}` }, { status: 500 });
   }
 }

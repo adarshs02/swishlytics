@@ -115,7 +115,7 @@ def main():
         filtered_df = season_stats_df[
             (season_stats_df['GP'] >= MIN_GAMES_PLAYED) &
             (season_stats_df['MIN'] > MIN_AVG_MINUTES)
-        ]
+        ].copy()
 
         if filtered_df.empty:
             print(f"No players met the criteria for season {season}.")
@@ -141,6 +141,7 @@ def main():
         'PLAYER_NAME': 'PlayerName',
         'TEAM_ABBREVIATION': 'Team',
         'SEASON': 'Season',
+        'AGE': 'PlayerAge',
         'GP': 'GamesPlayed',
         'MIN': 'AvgMinutes',
         'PTS': 'Points',
@@ -167,6 +168,13 @@ def main():
     existing_columns_to_keep = {k: v for k, v in columns_to_keep.items() if k in final_df.columns}
     final_df = final_df[list(existing_columns_to_keep.keys())]
     final_df = final_df.rename(columns=existing_columns_to_keep)
+
+    # Ensure PlayerAge is a clean integer type
+    if 'PlayerAge' in final_df.columns:
+        final_df['PlayerAge'] = pd.to_numeric(final_df['PlayerAge'], errors='coerce').fillna(0).astype(int)
+        print("Successfully cleaned and converted 'PlayerAge' column to integer.")
+    else:
+        print("Warning: 'PlayerAge' column not found after renaming. Cannot clean.")
 
     # Ensure data directory exists
     if not os.path.exists(DATA_DIR):

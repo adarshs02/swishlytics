@@ -1,44 +1,34 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
 
 // Define a type for our player data for better type safety
 interface PlayerData {
-  [key: string]: number | string | undefined;
-  Overall_Rank: number;
-  PlayerName: string;
-  Team: string;
-  GamesPlayed: number;
-  AvgMinutes: number;
-  Points: number;
-  Rebounds: number;
-  Assists: number;
-  Steals: number;
-  Blocks: number;
-  Turnovers: number;
-  FieldGoalsMade: number;
-  FieldGoalAttempts: number;
-  ThreePointersMade: number;
-  ThreePointAttempts: number;
-  FieldGoalPct: number;
-  ThreePointPct: number;
-  FreeThrowPct: number;
-  TrueShootingPct: number;
-  UsageRate: number;
-  Swish_Score: number;
-  Points_ZScore?: number;
-  Rebounds_ZScore?: number;
-  Assists_ZScore?: number;
-  Steals_ZScore?: number;
-  Blocks_ZScore?: number;
-  Turnovers_ZScore?: number;
-  FieldGoalsMade_ZScore?: number;
-  FieldGoalAttempts_ZScore?: number;
-  ThreePointersMade_ZScore?: number;
-  ThreePointAttempts_ZScore?: number;
-  FieldGoalPct_ZScore?: number;
-  ThreePointPct_ZScore?: number;
-  FreeThrowPct_ZScore?: number;
+  [key: string]: any; // Keep for flexibility with dynamic keys
+  player_id: string;
+  Player: string;
+  team: string;
+  player_age: number;
+  games_played: number;
+  avg_minutes: number;
+  points: number;
+  rebounds: number;
+  assists: number;
+  steals: number;
+  blocks: number;
+  turnovers: number;
+  swish_score: number;
+  swish_rank?: number;
+  points_z_score?: number;
+  rebounds_z_score?: number;
+  assists_z_score?: number;
+  steals_z_score?: number;
+  blocks_z_score?: number;
+  turnovers_z_score?: number;
+  field_goal_pct_z_score?: number;
+  three_pointers_made_z_score?: number;
+  free_throw_pct_z_score?: number;
 }
 
 export default function Home() {
@@ -47,7 +37,7 @@ export default function Home() {
   const [rankings, setRankings] = useState<PlayerData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sortConfig, setSortConfig] = useState<{ key: keyof PlayerData; direction: 'ascending' | 'descending' } | null>({ key: 'Overall_Rank', direction: 'ascending' });
+  const [sortConfig, setSortConfig] = useState<{ key: keyof PlayerData; direction: 'ascending' | 'descending' } | null>({ key: 'swish_rank', direction: 'ascending' });
 
   // Effect to fetch available seasons on initial load
   useEffect(() => {
@@ -85,7 +75,14 @@ export default function Home() {
           throw new Error(`Failed to fetch rankings for ${selectedSeason}`);
         }
         const data = await response.json();
-        setRankings(data);
+        // Sort by swish_score to determine rank
+        const rankedData = [...data].sort((a, b) => (b.swish_score || 0) - (a.swish_score || 0));
+        // Add the rank to each player object
+        const dataWithRank = rankedData.map((player, index) => ({
+          ...player,
+          swish_rank: index + 1,
+        }));
+        setRankings(dataWithRank);
       } catch (err) {
         setError(`Could not load ranking data for ${selectedSeason}.`);
         console.error(err);
@@ -128,11 +125,6 @@ export default function Home() {
     if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
       direction = 'descending';
     }
-    // For stats where higher is better, default to descending. For ranks/turnovers, default to ascending.
-    else if (!sortConfig || sortConfig.key !== key) {
-        const highIsGood = !['Overall_Rank', 'Turnovers'].includes(key as string);
-        direction = highIsGood ? 'descending' : 'ascending';
-    }
     setSortConfig({ key, direction });
   };
 
@@ -144,53 +136,34 @@ export default function Home() {
   };
 
   const getStatCellStyle = (player: PlayerData, statKey: keyof PlayerData): React.CSSProperties => {
-    let zScore: number | undefined;
+    const zScoreKey = `${statKey}_z_score`;
+    const zScore = player[zScoreKey];
 
-    if (statKey === 'Swish_Score') {
-      zScore = player.Swish_Score as number | undefined;
-    } else {
-      const zScoreKey = `${statKey}_ZScore`;
-      zScore = player[zScoreKey] as number | undefined;
+    if (typeof zScore !== 'number') {
+      return {}; // No specific style if z-score is not available
     }
 
-    if (zScore === undefined) {
-      return {};
-    }
+    // Turnovers are bad, so we invert the color scale
+    const isBadStat = statKey === 'turnovers';
+    const effectiveZ = isBadStat ? -zScore : zScore;
 
-    const adjustedZScore = statKey === 'Turnovers' ? -zScore : zScore;
+    // Clamp the z-score to a [-2, 2] range for a reasonable color scale
+    const clampedZ = Math.max(-2, Math.min(2, effectiveZ));
 
-    const maxZ = 3.0; // Cap for intensity calculation
-    const minAlpha = 0.3;
-    const maxAlpha = 0.95;
+    // Normalize the clamped z-score to a [0, 1] range
+    const normalizedZ = (clampedZ + 2) / 4;
 
-    const getAlpha = (score: number, threshold: number) => {
-        const intensity = (Math.abs(score) - threshold) / (maxZ - threshold);
-        const clampedIntensity = Math.max(0, Math.min(intensity, 1));
-        return minAlpha + clampedIntensity * (maxAlpha - minAlpha);
+    // Interpolate the hue value from red (0) to green (120)
+    const hue = normalizedZ * 120;
+
+    // Decrease the base lightness and increase the z-score multiplier for more intense colors
+    const lightness = 85 - Math.abs(zScore) * 9;
+
+    return {
+      backgroundColor: `hsl(${hue}, 90%, ${lightness}%)`, // Increased saturation to 90%
+      color: 'black',
+      fontWeight: 'bold',
     };
-
-    let colorRgb = '';
-    let alpha = 0;
-
-    if (adjustedZScore > 1.5) { // Exceptionally Good (Blue)
-        colorRgb = '0, 123, 255';
-        alpha = getAlpha(adjustedZScore, 1.5);
-    } else if (adjustedZScore > 0.5) { // Good (Green)
-        colorRgb = '40, 167, 69';
-        alpha = getAlpha(adjustedZScore, 0.5);
-    } else if (adjustedZScore < -0.5) { // Bad (Red)
-        colorRgb = '220, 53, 69';
-        alpha = getAlpha(adjustedZScore, 0.5);
-    } else { // Average (Yellow)
-        colorRgb = '255, 193, 7';
-        alpha = 0.25; // A fixed, low intensity for average stats
-    }
-
-    if (colorRgb) {
-      return { backgroundColor: `rgba(${colorRgb}, ${alpha.toFixed(2)})` };
-    }
-
-    return {};
   };
 
   const getSortIndicator = (for_key: keyof PlayerData) => {
@@ -235,72 +208,57 @@ export default function Home() {
           </h2>
           <p style={{ textAlign: 'center', fontStyle: 'italic', margin: '1rem 0' }}>Prediction engine, matchup data, and more coming soon</p>
           <div className="table-container">
-          <table id="rankings-table">
-            <thead>
-              <tr>
-                <th className="px-4 py-2 text-left cursor-pointer" onClick={() => requestSort('Overall_Rank')}>Rank{getSortIndicator('Overall_Rank')}</th>
-                <th className="px-4 py-2 text-left cursor-pointer" onClick={() => requestSort('PlayerName')}>Player{getSortIndicator('PlayerName')}</th>
-                <th className="px-4 py-2 text-left cursor-pointer" onClick={() => requestSort('Team')}>Team{getSortIndicator('Team')}</th>
-                <th className="px-4 py-2 text-left cursor-pointer" onClick={() => requestSort('GamesPlayed')}>GP{getSortIndicator('GamesPlayed')}</th>
-                <th className="px-4 py-2 text-left cursor-pointer" onClick={() => requestSort('AvgMinutes')}>MIN{getSortIndicator('AvgMinutes')}</th>
-                <th className="px-4 py-2 text-left cursor-pointer" onClick={() => requestSort('Points')}>PTS{getSortIndicator('Points')}</th>
-                <th className="px-4 py-2 text-left cursor-pointer" onClick={() => requestSort('Rebounds')}>REB{getSortIndicator('Rebounds')}</th>
-                <th className="px-4 py-2 text-left cursor-pointer" onClick={() => requestSort('Assists')}>AST{getSortIndicator('Assists')}</th>
-                <th className="px-4 py-2 text-left cursor-pointer" onClick={() => requestSort('Steals')}>STL{getSortIndicator('Steals')}</th>
-                <th className="px-4 py-2 text-left cursor-pointer" onClick={() => requestSort('Blocks')}>BLK{getSortIndicator('Blocks')}</th>
-                <th className="px-4 py-2 text-left cursor-pointer" onClick={() => requestSort('Turnovers')}>TOV{getSortIndicator('Turnovers')}</th>
-                <th className="px-4 py-2 text-left cursor-pointer" onClick={() => requestSort('FieldGoalsMade')}>FGM{getSortIndicator('FieldGoalsMade')}</th>
-                <th className="px-4 py-2 text-left cursor-pointer" onClick={() => requestSort('FieldGoalAttempts')}>FGA{getSortIndicator('FieldGoalAttempts')}</th>
-                <th className="px-4 py-2 text-left cursor-pointer" onClick={() => requestSort('FieldGoalPct')}>FG%{getSortIndicator('FieldGoalPct')}</th>
-                <th className="px-4 py-2 text-left cursor-pointer" onClick={() => requestSort('ThreePointersMade')}>3PM{getSortIndicator('ThreePointersMade')}</th>
-                <th className="px-4 py-2 text-left cursor-pointer" onClick={() => requestSort('ThreePointAttempts')}>3PA{getSortIndicator('ThreePointAttempts')}</th>
-                <th className="px-4 py-2 text-left cursor-pointer" onClick={() => requestSort('ThreePointPct')}>3P%{getSortIndicator('ThreePointPct')}</th>
-                <th className="px-4 py-2 text-left cursor-pointer" onClick={() => requestSort('FreeThrowPct')}>FT%{getSortIndicator('FreeThrowPct')}</th>
-                <th className="px-4 py-2 text-left cursor-pointer" onClick={() => requestSort('TrueShootingPct')}>TS%{getSortIndicator('TrueShootingPct')}</th>
-                <th className="px-4 py-2 text-left cursor-pointer" onClick={() => requestSort('UsageRate')}>USG%{getSortIndicator('UsageRate')}</th>
-                <th className="px-4 py-2 text-left cursor-pointer" onClick={() => requestSort('Swish_Score')}>Swish Score{getSortIndicator('Swish_Score')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading ? (
-                <tr key="loading"><td colSpan={21} style={{ textAlign: 'center' }}>Loading...</td></tr>
-              ) : error ? (
-                <tr key="error"><td colSpan={21} style={{ textAlign: 'center', color: 'red' }}>{error}</td></tr>
-              ) : sortedRankings.length > 0 ? (
-                 sortedRankings.map((player) => (
-                  <tr key={player.PlayerName}>
-                    <td className="border-t px-4 py-2 font-bold">{player.Overall_Rank}</td>
-                    <td className="border-t px-4 py-2">{player.PlayerName}</td>
-                    <td className="border-t px-4 py-2">{player.Team}</td>
-                    <td className="border-t px-4 py-2 font-bold">{player.GamesPlayed}</td>
-                    <td className="border-t px-4 py-2 font-bold">{typeof player.AvgMinutes === 'number' ? player.AvgMinutes.toFixed(1) : 'N/A'}</td>
-                    <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'Points')}>{formatStat(player.Points)}</td>
-                    <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'Rebounds')}>{formatStat(player.Rebounds)}</td>
-                    <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'Assists')}>{formatStat(player.Assists)}</td>
-                    <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'Steals')}>{formatStat(player.Steals)}</td>
-                    <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'Blocks')}>{formatStat(player.Blocks)}</td>
-                    <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'Turnovers')}>{formatStat(player.Turnovers)}</td>
-                    <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'FieldGoalsMade')}>{formatStat(player.FieldGoalsMade)}</td>
-                    <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'FieldGoalAttempts')}>{formatStat(player.FieldGoalAttempts)}</td>
-                    <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'FieldGoalPct')}>{typeof player.FieldGoalPct === 'number' ? player.FieldGoalPct.toFixed(3) : 'N/A'}</td>
-                    <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'ThreePointersMade')}>{formatStat(player.ThreePointersMade)}</td>
-                    <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'ThreePointAttempts')}>{formatStat(player.ThreePointAttempts)}</td>
-                    <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'ThreePointPct')}>{typeof player.ThreePointPct === 'number' ? player.ThreePointPct.toFixed(3) : 'N/A'}</td>
-                    <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'FreeThrowPct')}>{typeof player.FreeThrowPct === 'number' ? player.FreeThrowPct.toFixed(3) : 'N/A'}</td>
-                    <td className="border-t px-4 py-2 font-bold">{typeof player.TrueShootingPct === 'number' ? player.TrueShootingPct.toFixed(3) : 'N/A'}</td>
-                    <td className="border-t px-4 py-2 font-bold">{typeof player.UsageRate === 'number' ? (player.UsageRate * 100).toFixed(1) + '%' : 'N/A'}</td>
-                    <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'Swish_Score')}>{typeof player.Swish_Score === 'number' ? player.Swish_Score.toFixed(2) : 'N/A'}</td>
-                  </tr>
-                ))
-              ) : (
-                <tr key="no-data"><td colSpan={21} style={{ textAlign: 'center' }}>No data available for this season.</td></tr>
-              )}
-            </tbody>
+            <table id="rankings-table">
+              <thead>
+                <tr className="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+                  <th onClick={() => requestSort('swish_rank')} className="px-4 py-2 cursor-pointer">Rank {getSortIndicator('swish_rank')}</th>
+                  <th onClick={() => requestSort('Player')} className="px-4 py-2 cursor-pointer">Player {getSortIndicator('Player')}</th>
+                  <th onClick={() => requestSort('team')} className="px-4 py-2 cursor-pointer">Team {getSortIndicator('team')}</th>
+                  <th onClick={() => requestSort('games_played')} className="px-4 py-2 cursor-pointer">GP {getSortIndicator('games_played')}</th>
+                  <th onClick={() => requestSort('avg_minutes')} className="px-4 py-2 cursor-pointer">MIN {getSortIndicator('avg_minutes')}</th>
+                  <th onClick={() => requestSort('points')} className="px-4 py-2 cursor-pointer">PTS {getSortIndicator('points')}</th>
+                  <th onClick={() => requestSort('rebounds')} className="px-4 py-2 cursor-pointer">REB {getSortIndicator('rebounds')}</th>
+                  <th onClick={() => requestSort('assists')} className="px-4 py-2 cursor-pointer">AST {getSortIndicator('assists')}</th>
+                  <th onClick={() => requestSort('steals')} className="px-4 py-2 cursor-pointer">STL {getSortIndicator('steals')}</th>
+                  <th onClick={() => requestSort('blocks')} className="px-4 py-2 cursor-pointer">BLK {getSortIndicator('blocks')}</th>
+                  <th onClick={() => requestSort('turnovers')} className="px-4 py-2 cursor-pointer">TOV {getSortIndicator('turnovers')}</th>
+                  <th onClick={() => requestSort('swish_score')} className="px-4 py-2 cursor-pointer">Swish Score {getSortIndicator('swish_score')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {isLoading ? (
+                  <tr key="loading"><td colSpan={12} style={{ textAlign: 'center' }}>Loading...</td></tr>
+                ) : error ? (
+                  <tr key="error"><td colSpan={12} style={{ textAlign: 'center', color: 'red' }}>{error}</td></tr>
+                ) : sortedRankings.length > 0 ? (
+                  sortedRankings.map((player, index) => (
+                    <tr key={player.Player}>
+                      <td className="border-t px-4 py-2 font-bold">{player.swish_rank}</td>
+                      <td className="border-t px-4 py-2">
+                        <Link href={`/player/${player.player_id}`} className="text-blue-600 hover:underline">
+                          {player.Player}
+                        </Link>
+                      </td>
+                      <td className="border-t px-4 py-2">{player.team}</td>
+                      <td className="border-t px-4 py-2 font-bold">{player.games_played}</td>
+                      <td className="border-t px-4 py-2 font-bold">{typeof player.avg_minutes === 'number' ? player.avg_minutes.toFixed(1) : 'N/A'}</td>
+                      <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'points')}>{formatStat(player.points)}</td>
+                      <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'rebounds')}>{formatStat(player.rebounds)}</td>
+                      <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'assists')}>{formatStat(player.assists)}</td>
+                      <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'steals')}>{formatStat(player.steals)}</td>
+                      <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'blocks')}>{formatStat(player.blocks)}</td>
+                      <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'turnovers')}>{formatStat(player.turnovers)}</td>
+                      <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'swish_score')}>{typeof player.swish_score === 'number' ? player.swish_score.toFixed(2) : 'N/A'}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr key="no-data"><td colSpan={12} style={{ textAlign: 'center' }}>No data available for this season.</td></tr>
+                )}
+              </tbody>
             </table>
-        </div>
+          </div>
         </div>
       </main>
-
       <footer>
         <p>&copy; 2025 Swishlytics</p>
       </footer>
