@@ -28,6 +28,8 @@ interface PlayerData {
   free_throws_made: number;
   free_throw_attempts: number;
   true_shooting_pct: number;
+  field_goal_pct: number;
+  free_throw_pct: number;
   points_z_score?: number;
   rebounds_z_score?: number;
   assists_z_score?: number;
@@ -37,7 +39,6 @@ interface PlayerData {
   field_goal_pct_z_score?: number;
   three_pointers_made_z_score?: number;
   free_throw_pct_z_score?: number;
-  true_shooting_pct_z_score?: number;
 }
 
 export default function Home() {
@@ -241,6 +242,8 @@ export default function Home() {
                   <th onClick={() => requestSort('steals')} className="px-4 py-2 cursor-pointer">STL {getSortIndicator('steals')}</th>
                   <th onClick={() => requestSort('blocks')} className="px-4 py-2 cursor-pointer">BLK {getSortIndicator('blocks')}</th>
                   <th onClick={() => requestSort('turnovers')} className="px-4 py-2 cursor-pointer">TOV {getSortIndicator('turnovers')}</th>
+                  <th onClick={() => requestSort('field_goal_pct')} className="px-4 py-2 cursor-pointer">FG% {getSortIndicator('field_goal_pct')}</th>
+                  <th onClick={() => requestSort('free_throw_pct')} className="px-4 py-2 cursor-pointer">FT% {getSortIndicator('free_throw_pct')}</th>
                   <th onClick={() => requestSort('three_pointers_made')} className="px-4 py-2 cursor-pointer">3PM {getSortIndicator('three_pointers_made')}</th>
                   <th onClick={() => requestSort('three_point_attempts')} className="px-4 py-2 cursor-pointer">3PA {getSortIndicator('three_point_attempts')}</th>
                   <th onClick={() => requestSort('field_goals_made')} className="px-4 py-2 cursor-pointer">FGM {getSortIndicator('field_goals_made')}</th>
@@ -254,9 +257,9 @@ export default function Home() {
               </thead>
               <tbody>
                 {isLoading ? (
-                  <tr key="loading"><td colSpan={20} style={{ textAlign: 'center' }}>Loading...</td></tr>
+                  <tr key="loading"><td colSpan={22} style={{ textAlign: 'center' }}>Loading...</td></tr>
                 ) : error ? (
-                  <tr key="error"><td colSpan={20} style={{ textAlign: 'center', color: 'red' }}>{error}</td></tr>
+                  <tr key="error"><td colSpan={22} style={{ textAlign: 'center', color: 'red' }}>{error}</td></tr>
                 ) : sortedRankings.length > 0 ? (
                   sortedRankings.map((player) => (
                     <tr key={player.player_id}>
@@ -275,6 +278,8 @@ export default function Home() {
                       <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'steals')}>{formatStat(player.steals)}</td>
                       <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'blocks')}>{formatStat(player.blocks)}</td>
                       <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'turnovers')}>{formatStat(player.turnovers)}</td>
+                      <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'field_goal_pct')}>{typeof player.field_goal_pct === 'number' ? (player.field_goal_pct * 100).toFixed(1) + '%' : 'N/A'}</td>
+                      <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'free_throw_pct')}>{typeof player.free_throw_pct === 'number' ? (player.free_throw_pct * 100).toFixed(1) + '%' : 'N/A'}</td>
                       <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'three_pointers_made')}>{formatStat(player.three_pointers_made)}</td>
                       <td className="border-t px-4 py-2 font-bold">{formatStat(player.three_point_attempts)}</td>
                       <td className="border-t px-4 py-2 font-bold">{formatStat(player.field_goals_made)}</td>
@@ -282,12 +287,12 @@ export default function Home() {
                       <td className="border-t px-4 py-2 font-bold">{formatStat(player.free_throws_made)}</td>
                       <td className="border-t px-4 py-2 font-bold">{formatStat(player.free_throw_attempts)}</td>
                       <td className="border-t px-4 py-2 font-bold">{typeof player.usage_rate === 'number' ? (player.usage_rate * 100).toFixed(1) + '%' : 'N/A'}</td>
-                      <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'true_shooting_pct')}>{typeof player.true_shooting_pct === 'number' ? (player.true_shooting_pct * 100).toFixed(1) + '%' : 'N/A'}</td>
+                      <td className="border-t px-4 py-2 font-bold">{typeof player.true_shooting_pct === 'number' ? (player.true_shooting_pct * 100).toFixed(1) + '%' : 'N/A'}</td>
                       <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'swish_score')}>{typeof player.swish_score === 'number' ? player.swish_score.toFixed(2) : 'N/A'}</td>
                     </tr>
                   ))
                 ) : (
-                  <tr key="no-data"><td colSpan={20} style={{ textAlign: 'center' }}>No data available for this season.</td></tr>
+                  <tr key="no-data"><td colSpan={22} style={{ textAlign: 'center' }}>No data available for this season.</td></tr>
                 )}
               </tbody>
             </table>

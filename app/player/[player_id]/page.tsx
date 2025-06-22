@@ -198,14 +198,14 @@ const PlayerPage = () => {
                 <th>BLK</th>
                 <th>TOV</th>
                 <th>FG%</th>
-                <th>FGM</th>
-                <th>FGA</th>
                 <th>FT%</th>
-                <th>FTM</th>
-                <th>FTA</th>
-                <th>3P%</th>
                 <th>3PM</th>
                 <th>3PA</th>
+                <th>3P%</th>
+                <th>FGM</th>
+                <th>FGA</th>
+                <th>FTM</th>
+                <th>FTA</th>
                 <th>TS%</th>
                 <th>Usage</th>
                 <th>Swish Score</th>
@@ -226,14 +226,14 @@ const PlayerPage = () => {
                   <td style={getStatCellStyle(stats, 'blocks')}>{stats.blocks.toFixed(1)}</td>
                   <td style={getStatCellStyle(stats, 'turnovers')}>{stats.turnovers.toFixed(1)}</td>
                   <td style={getStatCellStyle(stats, 'field_goal_pct')}>{((stats.field_goal_pct || 0) * 100).toFixed(1)}%</td>
-                  <td>{stats.field_goals_made.toFixed(1)}</td>
-                  <td>{stats.field_goal_attempts.toFixed(1)}</td>
                   <td style={getStatCellStyle(stats, 'free_throw_pct')}>{((stats.free_throw_pct || 0) * 100).toFixed(1)}%</td>
-                  <td>{stats.free_throws_made.toFixed(1)}</td>
-                  <td>{stats.free_throw_attempts.toFixed(1)}</td>
-                  <td>{(stats.three_point_pct * 100).toFixed(1)}%</td>
                   <td style={getStatCellStyle(stats, 'three_pointers_made')}>{stats.three_pointers_made.toFixed(1)}</td>
                   <td>{stats.three_point_attempts.toFixed(1)}</td>
+                  <td>{(stats.three_point_pct * 100).toFixed(1)}%</td>
+                  <td>{stats.field_goals_made.toFixed(1)}</td>
+                  <td>{stats.field_goal_attempts.toFixed(1)}</td>
+                  <td>{stats.free_throws_made.toFixed(1)}</td>
+                  <td>{stats.free_throw_attempts.toFixed(1)}</td>
                   <td>{(stats.true_shooting_pct * 100).toFixed(1)}%</td>
                   <td>{(stats.usage_rate * 100).toFixed(1)}%</td>
                   <td className="font-bold" style={getStatCellStyle(stats, 'swish_score')}>{stats.swish_score.toFixed(2)}</td>
