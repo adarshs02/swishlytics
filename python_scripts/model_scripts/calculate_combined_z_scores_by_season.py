@@ -33,7 +33,9 @@ def calculate_z_scores_for_df(df, stats):
     Returns:
         pd.DataFrame: A new DataFrame with the original data plus z-score columns.
     """
-    z_score_df = df.copy()
+    # Create a new DataFrame to hold only the z-score columns
+    z_scores = pd.DataFrame(index=df.index)
+    
     for stat in stats:
         if stat not in df.columns:
             print(f"    Warning: Column '{stat}' not found in DataFrame. Skipping z-score calculation for this stat.")
@@ -41,15 +43,18 @@ def calculate_z_scores_for_df(df, stats):
         if pd.api.types.is_numeric_dtype(df[stat]):
             mean_val = df[stat].mean()
             std_dev = df[stat].std()
+            # Calculate z-score, handle division by zero or NaN std_dev
             if std_dev == 0 or pd.isna(std_dev):
-                z_score_df[f'{stat}_ZScore'] = 0.0
+                z_scores[f'{stat}_ZScore'] = 0.0
             else:
-                z_score_df[f'{stat}_ZScore'] = (df[stat] - mean_val) / std_dev
+                z_scores[f'{stat}_ZScore'] = (df[stat] - mean_val) / std_dev
             print(f"    Calculated z-scores for '{stat}'. Mean: {mean_val:.2f}, StdDev: {std_dev:.2f}")
         else:
             print(f"    Warning: Column '{stat}' is not numeric. Skipping z-score calculation.")
-            z_score_df[f'{stat}_ZScore'] = np.nan  # Or some other placeholder
-    return z_score_df
+            z_scores[f'{stat}_ZScore'] = np.nan  # Or some other placeholder
+            
+    # Concatenate the original DataFrame with the new z-score columns
+    return pd.concat([df, z_scores], axis=1)
 
 def main():
     """Main function to load data for all seasons, calculate z-scores, and save to a single combined file per season."""
