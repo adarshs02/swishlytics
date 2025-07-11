@@ -5,3 +5,5 @@ supabase==2.5.1
 python-dotenv==1.0.1
 nba-api==1.1.11
 matplotlib
+xgboost
+shap
