@@ -138,52 +138,70 @@ export default function Home() {
     setSortConfig({ key, direction });
   };
 
-  const formatStat = (value: number | string) => {
-    if (typeof value === 'number') {
-        return value.toFixed(1);
+  const formatStat = (value: any, key: string) => {
+    if (value == null || value === undefined) return "N/A";
+    
+    if (key === 'swish_rank' || key === 'player_age' || key === 'games_played') {
+        return Math.round(value);
     }
-    return 'N/A';
+
+    if (key.includes('_pct') || key === 'usage_rate') {
+      return `${(Number(value) * 100).toFixed(1)}%`;
+    }
+
+    if (typeof value === "number") {
+      if (key === "swish_score") {
+        return value.toFixed(2);
+      }
+      return value.toFixed(1); // Default for counting stats
+    }
+    
+    return String(value);
   };
 
   const getStatCellStyle = (player: PlayerData, statKey: keyof PlayerData): React.CSSProperties => {
-    let zScore;
+    const maxAlpha = 0.6; // Max opacity for the background color
+
+    // Special case for swish_score, which is a composite score
     if (statKey === 'swish_score') {
-      zScore = player.swish_score;
-    } else {
-      const zScoreKey = `${statKey}_z_score`;
-      zScore = player[zScoreKey];
+        const maxSwishScore = 15;
+        const score = player.swish_score || 0;
+        let color = '';
+        if (score > 0) {
+            const alpha = Math.min(score / maxSwishScore, 1) * maxAlpha;
+            color = `rgba(0, 255, 0, ${alpha})`;
+        } else {
+            const alpha = Math.min(Math.abs(score) / maxSwishScore, 1) * maxAlpha;
+            color = `rgba(255, 0, 0, ${alpha})`;
+        }
+        return { backgroundColor: color };
     }
+
+    const zScoreKey = `${String(statKey)}_z_score`;
+    const zScore = player[zScoreKey];
 
     if (typeof zScore !== 'number') {
-      return {}; // No style if z-score is not available
+      return {};
     }
 
-    // Turnovers are bad, so we invert the color scale
-    const isBadStat = statKey === 'turnovers';
-    const effectiveZ = isBadStat ? -zScore : zScore;
+    // Define a max z-score for scaling. Scores beyond this will have max color intensity.
+    const maxZScore = 2.5;
+    let color = '';
 
-    // Shift the z-score range to make green more exclusive
-    // An average score (z-score=0) will now be orange-yellow
-    const clampedZ = Math.max(-2, Math.min(4, effectiveZ));
+    // Invert colors for turnovers, where a high z-score is bad.
+    const isNegativeStat = statKey === 'turnovers';
 
-    // Normalize the new clamped z-score to a [0, 1] range
-    const normalizedZ = (clampedZ + 2) / 6;
+    if ((zScore > 0 && !isNegativeStat) || (zScore < 0 && isNegativeStat)) {
+      // Good stats are green
+      const alpha = Math.min(Math.abs(zScore) / maxZScore, 1) * maxAlpha;
+      color = `rgba(0, 255, 0, ${alpha})`;
+    } else if ((zScore < 0 && !isNegativeStat) || (zScore > 0 && isNegativeStat)) {
+      // Bad stats are red
+      const alpha = Math.min(Math.abs(zScore) / maxZScore, 1) * maxAlpha;
+      color = `rgba(255, 0, 0, ${alpha})`;
+    }
 
-    // Interpolate the hue value from red (0) to green (120)
-    const hue = normalizedZ * 120;
-
-    // Adjust lightness based on z-score
-    let lightness = 80 - Math.abs(zScore) * 7;
-
-    // Clamp lightness to prevent it from becoming too dark or too light
-    lightness = Math.max(50, Math.min(90, lightness));
-
-    return {
-      backgroundColor: `hsl(${hue}, 90%, ${lightness}%)`,
-      color: 'black',
-      fontWeight: 'bold',
-    };
-
+    return { backgroundColor: color };
   };
 
   const getSortIndicator = (for_key: keyof PlayerData) => {
@@ -263,32 +281,32 @@ export default function Home() {
                 ) : sortedRankings.length > 0 ? (
                   sortedRankings.map((player) => (
                     <tr key={player.player_id}>
-                      <td className="border-t px-4 py-2 font-bold">{player.swish_rank}</td>
+                      <td className="border-t px-4 py-2 font-bold">{formatStat(player.swish_rank, 'swish_rank')}</td>
                       <td className="border-t px-4 py-2">
                         <Link href={`/player/${player.player_id}`} className="text-blue-600 hover:underline">
                           {player.Player}
                         </Link>
                       </td>
                       <td className="border-t px-4 py-2">{player.team}</td>
-                      <td className="border-t px-4 py-2 font-bold">{player.games_played}</td>
-                      <td className="border-t px-4 py-2 font-bold">{typeof player.avg_minutes === 'number' ? player.avg_minutes.toFixed(1) : 'N/A'}</td>
-                      <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'points')}>{formatStat(player.points)}</td>
-                      <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'rebounds')}>{formatStat(player.rebounds)}</td>
-                      <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'assists')}>{formatStat(player.assists)}</td>
-                      <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'steals')}>{formatStat(player.steals)}</td>
-                      <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'blocks')}>{formatStat(player.blocks)}</td>
-                      <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'turnovers')}>{formatStat(player.turnovers)}</td>
-                      <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'field_goal_pct')}>{typeof player.field_goal_pct === 'number' ? (player.field_goal_pct * 100).toFixed(1) + '%' : 'N/A'}</td>
-                      <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'free_throw_pct')}>{typeof player.free_throw_pct === 'number' ? (player.free_throw_pct * 100).toFixed(1) + '%' : 'N/A'}</td>
-                      <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'three_pointers_made')}>{formatStat(player.three_pointers_made)}</td>
-                      <td className="border-t px-4 py-2 font-bold">{formatStat(player.three_point_attempts)}</td>
-                      <td className="border-t px-4 py-2 font-bold">{formatStat(player.field_goals_made)}</td>
-                      <td className="border-t px-4 py-2 font-bold">{formatStat(player.field_goal_attempts)}</td>
-                      <td className="border-t px-4 py-2 font-bold">{formatStat(player.free_throws_made)}</td>
-                      <td className="border-t px-4 py-2 font-bold">{formatStat(player.free_throw_attempts)}</td>
-                      <td className="border-t px-4 py-2 font-bold">{typeof player.usage_rate === 'number' ? (player.usage_rate * 100).toFixed(1) + '%' : 'N/A'}</td>
-                      <td className="border-t px-4 py-2 font-bold">{typeof player.true_shooting_pct === 'number' ? (player.true_shooting_pct * 100).toFixed(1) + '%' : 'N/A'}</td>
-                      <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'swish_score')}>{typeof player.swish_score === 'number' ? player.swish_score.toFixed(2) : 'N/A'}</td>
+                      <td className="border-t px-4 py-2 font-bold">{formatStat(player.games_played, 'games_played')}</td>
+                      <td className="border-t px-4 py-2 font-bold">{formatStat(player.avg_minutes, 'avg_minutes')}</td>
+                      <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'points')}>{formatStat(player.points, 'points')}</td>
+                      <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'rebounds')}>{formatStat(player.rebounds, 'rebounds')}</td>
+                      <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'assists')}>{formatStat(player.assists, 'assists')}</td>
+                      <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'steals')}>{formatStat(player.steals, 'steals')}</td>
+                      <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'blocks')}>{formatStat(player.blocks, 'blocks')}</td>
+                      <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'turnovers')}>{formatStat(player.turnovers, 'turnovers')}</td>
+                      <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'field_goal_pct')}>{formatStat(player.field_goal_pct, 'field_goal_pct')}</td>
+                      <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'free_throw_pct')}>{formatStat(player.free_throw_pct, 'free_throw_pct')}</td>
+                      <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'three_pointers_made')}>{formatStat(player.three_pointers_made, 'three_pointers_made')}</td>
+                      <td className="border-t px-4 py-2 font-bold">{formatStat(player.three_point_attempts, 'three_point_attempts')}</td>
+                      <td className="border-t px-4 py-2 font-bold">{formatStat(player.field_goals_made, 'field_goals_made')}</td>
+                      <td className="border-t px-4 py-2 font-bold">{formatStat(player.field_goal_attempts, 'field_goal_attempts')}</td>
+                      <td className="border-t px-4 py-2 font-bold">{formatStat(player.free_throws_made, 'free_throws_made')}</td>
+                      <td className="border-t px-4 py-2 font-bold">{formatStat(player.free_throw_attempts, 'free_throw_attempts')}</td>
+                      <td className="border-t px-4 py-2 font-bold">{formatStat(player.usage_rate, 'usage_rate')}</td>
+                      <td className="border-t px-4 py-2 font-bold">{formatStat(player.true_shooting_pct, 'true_shooting_pct')}</td>
+                      <td className="border-t px-4 py-2 font-bold" style={getStatCellStyle(player, 'swish_score')}>{formatStat(player.swish_score, 'swish_score')}</td>
                     </tr>
                   ))
                 ) : (

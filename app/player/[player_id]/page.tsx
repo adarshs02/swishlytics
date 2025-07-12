@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import Table1 from '../../components/table1';
 
 // --- TYPE DEFINITIONS ---
 interface SeasonalStats {
@@ -33,35 +34,12 @@ interface SeasonalStats {
 
 interface PlayerDetails {
   full_name: string;
-  player_stats: {
-    [key: string]: any; // Allow for dynamic z-score keys
-    season: string;
-    team: string;
-    games_played: number;
-    avg_minutes: number;
-    points: number;
-    rebounds: number;
-    assists: number;
-    steals: number;
-    blocks: number;
-    turnovers: number;
-    player_age: number;
-    field_goal_pct: number;
-    free_throw_pct: number;
-    three_point_pct: number;
-    true_shooting_pct: number;
-    three_pointers_made: number;
-    three_point_attempts: number;
-    field_goals_made: number;
-    field_goal_attempts: number;
-    free_throws_made: number;
-    free_throw_attempts: number;
-    usage_rate: number;
-    swish_score: number;
-  }[];
+  player_stats: SeasonalStats[];
 }
 
 interface GameLog {
+  game_id: string; // For unique key prop
+  player_id: string; // To satisfy Table1 constraint
   game_date: string;
   opponent: string;
   win_loss: string;
@@ -91,7 +69,6 @@ const PlayerPage = () => {
       setIsLoading(true);
       setError(null);
       try {
-        // Fetch both details and game logs in parallel
         const [detailsRes, gameLogsRes] = await Promise.all([
           fetch(`/api/player/${player_id}/details`),
           fetch(`/api/player/${player_id}/gamelogs`)
@@ -104,8 +81,24 @@ const PlayerPage = () => {
         const detailsData = await detailsRes.json();
         const gameLogsData = await gameLogsRes.json();
 
+        // Sort player stats by season chronologically
+        if (detailsData && detailsData.player_stats) {
+          detailsData.player_stats.sort((a: SeasonalStats, b: SeasonalStats) => {
+            const seasonA = parseInt(a.season.split('-')[0]);
+            const seasonB = parseInt(b.season.split('-')[0]);
+            return seasonA - seasonB;
+          });
+        }
+
+        // Add a unique key to each game log for React rendering
+        const gameLogsWithKeys = gameLogsData.map((log: GameLog, index: number) => ({
+            ...log,
+            game_id: `${player_id}-${log.game_date}-${index}`,
+            player_id: player_id // To satisfy Table1's generic constraint
+        }));
+
         setPlayerDetails(detailsData);
-        setGameLogs(gameLogsData);
+        setGameLogs(gameLogsWithKeys);
 
       } catch (err) {
         setError('Could not load player data.');
@@ -130,159 +123,158 @@ const PlayerPage = () => {
     return <div className="text-center p-10">Player not found.</div>;
   }
 
-  // Function to determine cell style based on z-score
-  const getStatCellStyle = (stats: any, statKey: string): React.CSSProperties => {
-    let zScore;
+  const getStatCellStyle = (player: SeasonalStats, statKey: keyof SeasonalStats | (string & {})): React.CSSProperties => {
+    const maxAlpha = 0.6; // Max opacity for the background color
+
+    // Special case for swish_score, which is a composite score
     if (statKey === 'swish_score') {
-      zScore = stats.swish_score;
-    } else {
-      const zScoreKey = `${statKey}_z_score`;
-      zScore = stats[zScoreKey];
+        const maxSwishScore = 15;
+        const score = player.swish_score || 0;
+        let color = '';
+        if (score > 0) {
+            const alpha = Math.min(score / maxSwishScore, 1) * maxAlpha;
+            color = `rgba(0, 255, 0, ${alpha})`;
+        } else {
+            const alpha = Math.min(Math.abs(score) / maxSwishScore, 1) * maxAlpha;
+            color = `rgba(255, 0, 0, ${alpha})`;
+        }
+        return { backgroundColor: color };
     }
+
+    const zScoreKey = `${String(statKey)}_z_score`;
+    const zScore = (player as any)[zScoreKey];
 
     if (typeof zScore !== 'number') {
-      return {}; // No style if z-score is not available
+      return {};
     }
 
-    // Turnovers are bad, so we invert the color scale
-    const isBadStat = statKey === 'turnovers';
-    const effectiveZ = isBadStat ? -zScore : zScore;
+    // Define a max z-score for scaling. Scores beyond this will have max color intensity.
+    const maxZScore = 2.5;
+    let color = '';
 
-    // Shift the z-score range to make green more exclusive
-    // An average score (z-score=0) will now be orange-yellow
-    const clampedZ = Math.max(-2, Math.min(4, effectiveZ));
+    // Invert colors for turnovers, where a high z-score is bad.
+    const isNegativeStat = String(statKey) === 'turnovers';
 
-    // Normalize the new clamped z-score to a [0, 1] range
-    const normalizedZ = (clampedZ + 2) / 6;
+    if ((zScore > 0 && !isNegativeStat) || (zScore < 0 && isNegativeStat)) {
+      // Good stats are green
+      const alpha = Math.min(Math.abs(zScore) / maxZScore, 1) * maxAlpha;
+      color = `rgba(0, 255, 0, ${alpha})`;
+    } else if ((zScore < 0 && !isNegativeStat) || (zScore > 0 && isNegativeStat)) {
+      // Bad stats are red
+      const alpha = Math.min(Math.abs(zScore) / maxZScore, 1) * maxAlpha;
+      color = `rgba(255, 0, 0, ${alpha})`;
+    }
 
-    // Interpolate the hue value from red (0) to green (120)
-    const hue = normalizedZ * 120;
+    return { backgroundColor: color };
+  };
 
-    // Adjust lightness based on z-score
-    let lightness = 80 - Math.abs(zScore) * 7;
+  const seasonStatsColumns = [
+    { key: 'season', label: 'Season' },
+    { key: 'team', label: 'Team' },
+    { key: 'player_age', label: 'Age' },
+    { key: 'games_played', label: 'GP' },
+    { key: 'avg_minutes', label: 'MIN' },
+    { key: 'points', label: 'PTS' },
+    { key: 'rebounds', label: 'REB' },
+    { key: 'assists', label: 'AST' },
+    { key: 'steals', label: 'STL' },
+    { key: 'blocks', label: 'BLK' },
+    { key: 'turnovers', label: 'TOV' },
+    { key: 'field_goal_pct', label: 'FG%' },
+    { key: 'free_throw_pct', label: 'FT%' },
+    { key: 'three_pointers_made', label: '3PM' },
+    { key: 'three_point_attempts', label: '3PA' },
+    { key: 'three_point_pct', label: '3P%' },
+    { key: 'field_goals_made', label: 'FGM' },
+    { key: 'field_goal_attempts', label: 'FGA' },
+    { key: 'free_throws_made', label: 'FTM' },
+    { key: 'free_throw_attempts', label: 'FTA' },
+    { key: 'true_shooting_pct', label: 'TS%' },
+    { key: 'usage_rate', label: 'Usage' },
+    { key: 'swish_score', label: 'Swish Score' },
+  ];
 
-    // Clamp lightness to prevent it from becoming too dark or too light
-    lightness = Math.max(50, Math.min(90, lightness));
+  const gameLogColumns = [
+    { key: 'game_date', label: 'Date' },
+    { key: 'opponent', label: 'Opponent' },
+    { key: 'win_loss', label: 'Result' },
+    { key: 'minutes_played', label: 'MIN' },
+    { key: 'points', label: 'PTS' },
+    { key: 'rebounds', label: 'REB' },
+    { key: 'assists', label: 'AST' },
+    { key: 'steals', label: 'STL' },
+    { key: 'blocks', label: 'BLK' },
+    { key: 'turnovers', label: 'TOV' },
+  ];
 
-    return {
-      backgroundColor: `hsl(${hue}, 90%, ${lightness}%)`,
-      color: 'black',
-      fontWeight: 'bold',
-    };
+  const renderSeasonStatsCell = (stats: SeasonalStats, key: keyof SeasonalStats | (string & {})) => {
+    const value = stats[key as keyof SeasonalStats];
 
+    const formatValue = (val: any) => {
+        if (typeof val === 'number') {
+            const stringKey = String(key);
+            if (stringKey.includes('_pct') || stringKey === 'usage_rate') {
+                return `${(val * 100).toFixed(1)}%`;
+            }
+            if (stringKey === 'swish_score') {
+                return val.toFixed(2);
+            }
+            if (stringKey === 'player_age' || stringKey === 'games_played') {
+                return val.toFixed(0);
+            }
+            return val.toFixed(1);
+        }
+        return val;
+    }
+
+    if (String(key) === 'season' || String(key) === 'team') {
+        return formatValue(value);
+    }
+
+    return <span className="font-bold">{formatValue(value)}</span>;
+  };
+
+  const renderGameLogCell = (log: GameLog, key: keyof GameLog | (string & {})) => {
+    const value = log[key as keyof GameLog];
+    if (key === 'game_date') {
+      return new Date(value as string).toLocaleDateString();
+    }
+    if (key === 'win_loss') {
+      return <span className={`font-bold ${value === 'W' ? 'text-green-400' : 'text-red-400'}`}>{value}</span>;
+    }
+    return value;
   };
 
   return (
-    <main className="container mx-auto p-4 md:p-8 bg-gray-900 text-white min-h-screen">
-      <div className="mb-6">
-        <Link href="/" className="text-blue-400 hover:text-blue-300">&larr; Back to Rankings</Link>
-      </div>
-      <h1 className="text-4xl font-bold mb-6 text-center">{playerDetails.full_name}</h1>
+    <>
+      <header>
+        <h1>Swishlytics</h1>
+      </header>
+      <main>
+        <div className="mb-6">
+          <Link href="/" className="text-blue-400 hover:text-blue-300">&larr; Back to Rankings</Link>
+        </div>
+        <h1 className="text-4xl font-bold mb-6 text-center">{playerDetails.full_name}</h1>
 
-      {/* Historical Season Stats */}
-      <div className="bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
         <h2 className="text-2xl font-semibold mb-4">Per Game Season Stats</h2>
-        <div className="overflow-x-auto">
-          <table className="player-page-table">
-            <thead>
-              <tr>
-                <th>Season</th>
-                <th>Team</th>
-                <th>Age</th>
-                <th>GP</th>
-                <th>MIN</th>
-                <th>PTS</th>
-                <th>REB</th>
-                <th>AST</th>
-                <th>STL</th>
-                <th>BLK</th>
-                <th>TOV</th>
-                <th>FG%</th>
-                <th>FT%</th>
-                <th>3PM</th>
-                <th>3PA</th>
-                <th>3P%</th>
-                <th>FGM</th>
-                <th>FGA</th>
-                <th>FTM</th>
-                <th>FTA</th>
-                <th>TS%</th>
-                <th>Usage</th>
-                <th>Swish Score</th>
-              </tr>
-            </thead>
-            <tbody>
-              {playerDetails.player_stats.map((stats, index) => (
-                <tr key={index}>
-                  <td className="font-medium">{stats.season}</td>
-                  <td>{stats.team}</td>
-                  <td>{stats.player_age}</td>
-                  <td>{stats.games_played}</td>
-                  <td>{stats.avg_minutes.toFixed(1)}</td>
-                  <td style={getStatCellStyle(stats, 'points')}>{stats.points.toFixed(1)}</td>
-                  <td style={getStatCellStyle(stats, 'rebounds')}>{stats.rebounds.toFixed(1)}</td>
-                  <td style={getStatCellStyle(stats, 'assists')}>{stats.assists.toFixed(1)}</td>
-                  <td style={getStatCellStyle(stats, 'steals')}>{stats.steals.toFixed(1)}</td>
-                  <td style={getStatCellStyle(stats, 'blocks')}>{stats.blocks.toFixed(1)}</td>
-                  <td style={getStatCellStyle(stats, 'turnovers')}>{stats.turnovers.toFixed(1)}</td>
-                  <td style={getStatCellStyle(stats, 'field_goal_pct')}>{((stats.field_goal_pct || 0) * 100).toFixed(1)}%</td>
-                  <td style={getStatCellStyle(stats, 'free_throw_pct')}>{((stats.free_throw_pct || 0) * 100).toFixed(1)}%</td>
-                  <td style={getStatCellStyle(stats, 'three_pointers_made')}>{stats.three_pointers_made.toFixed(1)}</td>
-                  <td>{stats.three_point_attempts.toFixed(1)}</td>
-                  <td>{(stats.three_point_pct * 100).toFixed(1)}%</td>
-                  <td>{stats.field_goals_made.toFixed(1)}</td>
-                  <td>{stats.field_goal_attempts.toFixed(1)}</td>
-                  <td>{stats.free_throws_made.toFixed(1)}</td>
-                  <td>{stats.free_throw_attempts.toFixed(1)}</td>
-                  <td>{(stats.true_shooting_pct * 100).toFixed(1)}%</td>
-                  <td>{(stats.usage_rate * 100).toFixed(1)}%</td>
-                  <td className="font-bold" style={getStatCellStyle(stats, 'swish_score')}>{stats.swish_score.toFixed(2)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+        <Table1
+          columns={seasonStatsColumns}
+          data={playerDetails.player_stats}
+          renderCell={renderSeasonStatsCell}
+          getCellStyle={getStatCellStyle}
+        />
 
-      {/* Game Logs */}
-      <div className="bg-gray-800 rounded-lg shadow-lg p-6">
-        <h2 className="text-2xl font-semibold mb-4">Recent Game Logs</h2>
-        <div className="overflow-x-auto">
-          <table className="player-page-table">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Opponent</th>
-                <th>Result</th>
-                <th>MIN</th>
-                <th>PTS</th>
-                <th>REB</th>
-                <th>AST</th>
-                <th>STL</th>
-                <th>BLK</th>
-                <th>TOV</th>
-              </tr>
-            </thead>
-            <tbody>
-              {gameLogs.map((log, index) => (
-                <tr key={index}>
-                  <td>{new Date(log.game_date).toLocaleDateString()}</td>
-                  <td>{log.opponent}</td>
-                  <td className={`font-bold ${log.win_loss === 'W' ? 'text-green-400' : 'text-red-400'}`}>{log.win_loss}</td>
-                  <td>{log.minutes_played}</td>
-                  <td>{log.points}</td>
-                  <td>{log.rebounds}</td>
-                  <td>{log.assists}</td>
-                  <td>{log.steals}</td>
-                  <td>{log.blocks}</td>
-                  <td>{log.turnovers}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </main>
+        <h2 className="text-2xl font-semibold mb-4 mt-8">Recent Game Logs</h2>
+        <Table1<GameLog>
+          columns={gameLogColumns}
+          data={gameLogs}
+          renderCell={renderGameLogCell}
+        />
+      </main>
+      <footer>
+        <p>&copy; 2025 Swishlytics</p>
+      </footer>
+    </>
   );
 };
 
