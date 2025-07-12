@@ -51,6 +51,46 @@ CREATE TABLE player_stats_by_season (
     UNIQUE(player_id, season)
 );
 
+-- Table for storing player projections for the next season
+CREATE TABLE player_projections (
+    projection_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    player_id UUID REFERENCES players(player_id) ON DELETE CASCADE,
+    season TEXT NOT NULL,
+    full_name TEXT,
+    team TEXT,
+    player_age INT,
+    games_played FLOAT,
+    avg_minutes FLOAT,
+    points FLOAT,
+    rebounds FLOAT,
+    assists FLOAT,
+    steals FLOAT,
+    blocks FLOAT,
+    turnovers FLOAT,
+    field_goal_pct FLOAT,
+    free_throw_pct FLOAT,
+    three_pointers_made FLOAT,
+    three_point_attempts FLOAT, -- Added
+    field_goals_made FLOAT, -- Added
+    field_goal_attempts FLOAT, -- Added
+    free_throws_made FLOAT, -- Added
+    free_throw_attempts FLOAT, -- Added
+    true_shooting_pct FLOAT,
+    usage_rate FLOAT,
+    points_z_score FLOAT,
+    rebounds_z_score FLOAT,
+    assists_z_score FLOAT,
+    steals_z_score FLOAT,
+    blocks_z_score FLOAT,
+    turnovers_z_score FLOAT, -- Note: inverted
+    field_goal_pct_z_score FLOAT,
+    free_throw_pct_z_score FLOAT,
+    three_pointers_made_z_score FLOAT,
+    swish_score FLOAT,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    UNIQUE(player_id, season)
+);
+
 -- Table for future use: storing individual game logs
 CREATE TABLE game_logs (
     game_log_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

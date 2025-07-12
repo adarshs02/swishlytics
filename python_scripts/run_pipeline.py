@@ -8,44 +8,52 @@ in the environment's pandas library that caused data loss during file writes.
 import pandas as pd
 from nba_api.stats.endpoints import leaguedashplayerstats
 import time
+import concurrent.futures
+
+# Import configuration
+import config
 
 # Import the refactored, in-memory functions
 from process_and_calculate_z_scores import process_and_calc_zscores
 from calculate_total_fantasy_scores import calculate_fantasy_scores
 from seed import seed_data
 
-# --- Pipeline Configuration ---
-CURRENT_YEAR = 2025
-SEASONS = [f"{year}-{str(year+1)[-2:]}" for year in range(CURRENT_YEAR - 10, CURRENT_YEAR)]
-MIN_GAMES_PLAYED = 20
-MIN_AVG_MINUTES = 25.0
-REQUEST_TIMEOUT = 30
-REQUEST_DELAY = 0.6
+def fetch_season_data(season):
+    """Fetches and merges base and advanced stats for a single season."""
+    print(f"  Fetching data for season: {season}...")
+    try:
+        # Fetch Base and Advanced stats
+        base_stats = leaguedashplayerstats.LeagueDashPlayerStats(
+            season=season, per_mode_detailed='PerGame', measure_type_detailed_defense='Base', timeout=config.REQUEST_TIMEOUT
+        ).get_data_frames()[0]
+        
+        # A small delay to be polite to the API
+        time.sleep(config.REQUEST_DELAY)
+
+        advanced_stats = leaguedashplayerstats.LeagueDashPlayerStats(
+            season=season, per_mode_detailed='PerGame', measure_type_detailed_defense='Advanced', timeout=config.REQUEST_TIMEOUT
+        ).get_data_frames()[0]
+        
+        # Merge stats
+        merged_df = pd.merge(base_stats, advanced_stats[['PLAYER_ID', 'TS_PCT', 'USG_PCT']], on='PLAYER_ID', how='left')
+        merged_df['SEASON'] = season # Add season column
+        print(f"    -> Successfully fetched and merged data for {season}.")
+        return merged_df
+    except Exception as e:
+        print(f"    -> ERROR: Could not fetch data for season {season}: {e}")
+        return None
 
 def fetch_player_data():
-    """Fetches, filters, and cleans player data for all specified seasons."""
+    """Fetches, filters, and cleans player data for all specified seasons in parallel."""
     print("Step 1: Fetching Player Data from NBA API...")
     all_seasons_data = []
 
-    for season in SEASONS:
-        print(f"  Fetching data for season: {season}...")
-        try:
-            # Fetch Base and Advanced stats
-            base_stats = leaguedashplayerstats.LeagueDashPlayerStats(
-                season=season, per_mode_detailed='PerGame', measure_type_detailed_defense='Base', timeout=REQUEST_TIMEOUT
-            ).get_data_frames()[0]
-            time.sleep(REQUEST_DELAY)
-            advanced_stats = leaguedashplayerstats.LeagueDashPlayerStats(
-                season=season, per_mode_detailed='PerGame', measure_type_detailed_defense='Advanced', timeout=REQUEST_TIMEOUT
-            ).get_data_frames()[0]
-            
-            # Merge stats
-            merged_df = pd.merge(base_stats, advanced_stats[['PLAYER_ID', 'TS_PCT', 'USG_PCT']], on='PLAYER_ID', how='left')
-            merged_df['SEASON'] = season # Add season column
-            all_seasons_data.append(merged_df)
-            print(f"    -> Successfully fetched and merged data.")
-        except Exception as e:
-            print(f"    -> ERROR: Could not fetch data for season {season}: {e}")
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        # Map the fetch function to each season
+        results = executor.map(fetch_season_data, config.SEASONS)
+    
+    # Filter out None results from failed API calls
+    all_seasons_data = [result for result in results if result is not None]
 
     if not all_seasons_data:
         print("FATAL: No data could be fetched from the API.")
@@ -54,7 +62,7 @@ def fetch_player_data():
     # Combine all seasons into one DataFrame and filter
     final_df = pd.concat(all_seasons_data, ignore_index=True)
     print("Filtering players based on minimum games and minutes...")
-    filtered_df = final_df[(final_df['GP'] >= MIN_GAMES_PLAYED) & (final_df['MIN'] >= MIN_AVG_MINUTES)].copy()
+    filtered_df = final_df[(final_df['GP'] >= config.MIN_GAMES_PLAYED) & (final_df['MIN'] >= config.MIN_AVG_MINUTES)].copy()
 
     # Rename columns to a consistent format
     column_renames = {
