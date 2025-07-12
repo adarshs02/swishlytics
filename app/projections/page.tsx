@@ -229,7 +229,7 @@ export default function ProjectionsPage() {
 
       <main>
         <h2 id="current-ranking-title">
-            Player Projections for Next Season
+            Player Projections for 2025-2026 Season
         </h2>
         <Table1
             columns={columns}
