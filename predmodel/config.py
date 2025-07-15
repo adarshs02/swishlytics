@@ -37,10 +37,10 @@ Z_SCORE_STATS = [
 ]
 
 Z_SCORE_COLUMNS = {
-    'Points_ZScore':            1.195,   # Points
+    'Points_ZScore':            1.165,   # Points
     'Rebounds_ZScore':          1.267,   # Rebounds
     'Assists_ZScore':           1.239,   # Assists
-    'Steals_ZScore':            1.322,   # Steals
+    'Steals_ZScore':            1.362,   # Steals
     'Blocks_ZScore':            1.426,   # Blocks
     'FieldGoalPct_ZScore':      1.380,   # Field-Goal %
     'ThreePointersMade_ZScore': 1.286,   # 3-Pointers Made

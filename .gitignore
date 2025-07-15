@@ -60,4 +60,5 @@ coverage/
 .env.*
 !.env.example
 
-predmodel/multi_output_xgb_model.joblib
+# Model files
+predmodel/*.joblib
