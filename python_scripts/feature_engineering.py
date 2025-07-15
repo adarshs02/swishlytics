@@ -78,35 +78,43 @@ def create_per_minute_stats(df):
     return df_filtered
 
 
-def create_yoy_stats(df):
+def create_historical_features(df, weights=[0.6, 0.4]):
     """
-    Calculates the year-over-year change in stats for each player.
+    Creates weighted historical features based on a player's last two seasons.
 
     Args:
         df (pd.DataFrame): DataFrame with player stats, sorted by player and season.
+        weights (list): A list of weights for the last two seasons, e.g., [0.6, 0.4].
 
     Returns:
-        pd.DataFrame: DataFrame with added year-over-year difference columns.
+        pd.DataFrame: DataFrame with added weighted historical average columns.
     """
     df_sorted = df.sort_values(by=['player_id', 'season'])
-    
-    stats_to_diff = [
-        'points', 'rebounds', 'assists', 'steals', 'blocks', 'turnovers', 
-        'three_pointers_made', 'swish_score', 'usage_rate', 'true_shooting_pct'
-    ]
-    
-    # Select only numeric columns for diff calculation to avoid errors
-    numeric_cols = df_sorted.select_dtypes(include='number').columns
-    stats_to_diff = [stat for stat in stats_to_diff if stat in numeric_cols]
 
-    # Group by player and calculate the difference from the previous season
-    yoy_diff = df_sorted.groupby('player_id')[stats_to_diff].diff()
+    stats_to_avg = [
+        'points', 'rebounds', 'assists', 'steals', 'blocks', 'turnovers',
+        'three_pointers_made', 'usage_rate', 'true_shooting_pct', 'avg_minutes', 'swish_score'
+    ]
+    numeric_cols = df_sorted.select_dtypes(include='number').columns
+    stats_to_avg = [stat for stat in stats_to_avg if stat in numeric_cols]
+
+    # Get stats from the previous two seasons
+    last_season = df_sorted.groupby('player_id')[stats_to_avg].shift(1)
+    two_seasons_ago = df_sorted.groupby('player_id')[stats_to_avg].shift(2)
+
+    # Calculate the weighted average
+    for stat in stats_to_avg:
+        weighted_avg_col = f'{stat}_weighted_hist'
+        df_sorted[weighted_avg_col] = (last_season[stat] * weights[0]) + (two_seasons_ago[stat] * weights[1])
+
+    # Also create simple year-over-year diff for recent trend
+    yoy_diff = df_sorted.groupby('player_id')[stats_to_avg].diff()
     yoy_diff.columns = [f'{col}_yoy_diff' for col in yoy_diff.columns]
 
-    df_with_yoy = pd.concat([df_sorted, yoy_diff], axis=1)
+    df_with_hist = pd.concat([df_sorted, yoy_diff], axis=1)
 
-    print("Successfully created year-over-year stats.")
-    return df_with_yoy
+    print("Successfully created weighted historical features and YoY stats.")
+    return df_with_hist
 
 
 def create_age_and_experience_features(df):
@@ -195,7 +203,7 @@ def create_team_context_features(df):
     vacated_df['next_season'] = vacated_df['next_season_start_year'].apply(lambda y: f"{y}-{str(y+1)[-2:]}")
 
     # Prepare for merge: we need vacated_usage for the season a player arrives
-    vacated_to_merge = vacated_df[['team', 'next_season', 'vacated_usage']]
+    vacated_to_merge = vacated_df[['team', 'next_season', 'vacated_usage']].copy()
     vacated_to_merge.rename(columns={'next_season': 'season'}, inplace=True)
 
     # Merge this back into the main dataframe
@@ -210,7 +218,7 @@ if __name__ == '__main__':
     player_stats_df = fetch_player_stats()
     if player_stats_df is not None:
         player_stats_df = create_per_minute_stats(player_stats_df)
-        player_stats_df = create_yoy_stats(player_stats_df)
+        player_stats_df = create_historical_features(player_stats_df)
         player_stats_df = create_age_and_experience_features(player_stats_df)
         print("\nDataFrame with Age and Experience features:")
         # Display the new columns for a player with multiple seasons
