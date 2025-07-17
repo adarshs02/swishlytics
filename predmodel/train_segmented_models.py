@@ -21,7 +21,7 @@ from config import STATS_TO_PROJECT
 AGE_SEGMENTS = {
     'prime': {'max_age': 28, 'model_name': 'xgb_model_prime.joblib'},
     'veteran': {'min_age': 29, 'max_age': 33, 'model_name': 'xgb_model_veteran.joblib'},
-    'senior': {'min_age': 34, 'model_name': 'xgb_model_senior.joblib'}
+    'senior': {'min_age': 34, 'max_age': 100, 'model_name': 'xgb_model_senior.joblib'}
 }
 
 def train_and_save_models_by_age():
@@ -84,7 +84,7 @@ def train_and_save_models_by_age():
         print(f"Training on {len(X_segment)} samples...")
 
         # Use the same XGBoost parameters as the original model for consistency
-        xgb_estimator = xgb.XGBRegressor(objective='reg:squarederror', n_estimators=150, learning_rate=0.05, max_depth=4, subsample=0.8, colsample_bytree=0.8, random_state=42)
+        xgb_estimator = xgb.XGBRegressor(objective='reg:squarederror', n_estimators=150, learning_rate=0.01, max_depth=4, subsample=0.8, colsample_bytree=0.8, random_state=42)
         multi_output_model = MultiOutputRegressor(estimator=xgb_estimator)
         
         multi_output_model.fit(X_segment, y_segment)

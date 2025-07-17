@@ -37,14 +37,14 @@ Z_SCORE_STATS = [
 ]
 
 Z_SCORE_COLUMNS = {
-    'Points_ZScore':            1.165,   # Points
-    'Rebounds_ZScore':          1.267,   # Rebounds
-    'Assists_ZScore':           1.239,   # Assists
-    'Steals_ZScore':            1.362,   # Steals
-    'Blocks_ZScore':            1.426,   # Blocks
+    'Points_ZScore':            1.185,   # Points
+    'Rebounds_ZScore':          1.257,   # Rebounds
+    'Assists_ZScore':           1.269,   # Assists
+    'Steals_ZScore':            1.322,   # Steals
+    'Blocks_ZScore':            1.436,   # Blocks
     'FieldGoalPct_ZScore':      1.380,   # Field-Goal %
     'ThreePointersMade_ZScore': 1.286,   # 3-Pointers Made
     'FreeThrowPct_ZScore':      1.256,   # Free-Throw %
-    'Turnovers_ZScore':        -1.217    # Turnovers (penalty, stays negative)
+    'Turnovers_ZScore':        -1.247    # Turnovers (penalty, stays negative)
 }
 

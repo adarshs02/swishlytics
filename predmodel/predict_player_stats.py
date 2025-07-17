@@ -66,28 +66,68 @@ def predict_stats_for_next_season():
         return None, None, None, None
 
     print("Making predictions with segmented models...")
+
+    # Define age segments
+    prime_df = df_for_prediction[df_for_prediction['player_age'] <= 28]
+    veteran_df = df_for_prediction[(df_for_prediction['player_age'] >= 29) & (df_for_prediction['player_age'] <= 33)]
+    senior_df = df_for_prediction[df_for_prediction['player_age'] >= 34]
+
     all_predictions = []
 
-    for index, player_row in df_for_prediction.iterrows():
-        age = player_row['player_age']
-        
-        if age <= 28:
-            model = models['prime']
-        elif 29 <= age <= 33:
-            model = models['veteran']
-        else:
-            model = models['senior']
-            
-        player_features = player_row[features].to_frame().T
-        prediction = model.predict(player_features)
-        
-        pred_df = pd.DataFrame(prediction, columns=STATS_TO_PROJECT, index=[index])
-        all_predictions.append(pred_df)
+    # Predict for each segment in batches
+    if not prime_df.empty:
+        prime_preds = models['prime'].predict(prime_df[features])
+        all_predictions.append(pd.DataFrame(prime_preds, columns=STATS_TO_PROJECT, index=prime_df.index))
 
-    df_predictions = pd.concat(all_predictions)
+    if not veteran_df.empty:
+        veteran_preds = models['veteran'].predict(veteran_df[features])
+        all_predictions.append(pd.DataFrame(veteran_preds, columns=STATS_TO_PROJECT, index=veteran_df.index))
+
+    if not senior_df.empty:
+        senior_preds = models['senior'].predict(senior_df[features])
+        all_predictions.append(pd.DataFrame(senior_preds, columns=STATS_TO_PROJECT, index=senior_df.index))
+
+    # Concatenate all predictions and sort by original index to maintain order
+    if all_predictions:
+        df_predictions = pd.concat(all_predictions).sort_index()
+    else:
+        df_predictions = pd.DataFrame(columns=STATS_TO_PROJECT)
     print("Predictions complete.")
 
     return df_predictions, df_for_prediction, prediction_season, player_stats_df
+
+def apply_age_based_reality_check(predictions_df, history_df):
+    """
+    Applies a final, aggressive check on projections, especially for older players,
+    to prevent unrealistic improvements.
+    """
+    print("Applying age-based reality check...")
+    final_projections = predictions_df.copy()
+    
+    stats_to_check = [stat for stat in STATS_TO_PROJECT if stat in final_projections.columns and stat in history_df.columns]
+    
+    for index, proj_row in final_projections.iterrows():
+        player_hist = history_df.loc[index]
+        age = player_hist['player_age']
+        
+        # For senior players (34+), enforce a hard cap: no improvement from last season
+        if age >= 34:
+            for stat in stats_to_check:
+                last_season_actual = player_hist[stat]
+                # Cap the projection at last season's value
+                if proj_row[stat] > last_season_actual:
+                    final_projections.loc[index, stat] = last_season_actual
+        
+        # For veteran players (29-33), apply a conservative blend
+        elif 29 <= age <= 33:
+            weight = 0.4 # Give more weight to historicals
+            for stat in stats_to_check:
+                model_pred = proj_row[stat]
+                last_season_actual = player_hist[stat]
+                final_projections.loc[index, stat] = (model_pred * weight) + (last_season_actual * (1 - weight))
+
+    print("Reality check complete.")
+    return final_projections
 
 def calculate_z_scores_and_swish_score(projections_df):
     """
@@ -115,6 +155,7 @@ def calculate_z_scores_and_swish_score(projections_df):
         }
         weight_key = z_score_key_map.get(stat)
         weight = Z_SCORE_COLUMNS.get(weight_key, 1.0) # Default to 1.0 if not found
+        print(f"  - Applying weight for {stat}: {weight}")
 
         if std > 0:
             z_score = (df[stat] - mean) / std
@@ -200,9 +241,12 @@ if __name__ == '__main__':
     projections, df_for_prediction, season, player_stats_df = predict_stats_for_next_season()
 
     if projections is not None:
+        # Apply the age-based reality check
+        checked_projections = apply_age_based_reality_check(projections, df_for_prediction)
+
         # Add player info (id, name, team) to the projections
         players_df = fetch_players()
-        projections_with_info = projections.merge(df_for_prediction[['player_id', 'team', 'player_age']], left_index=True, right_index=True)
+        projections_with_info = checked_projections.merge(df_for_prediction[['player_id', 'team', 'player_age']], left_index=True, right_index=True)
         projections_with_info = projections_with_info.merge(players_df[['player_id', 'full_name']], on='player_id', how='left')
 
         # Calculate z-scores and swish_score on the blended data
