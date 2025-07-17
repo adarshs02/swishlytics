@@ -8,27 +8,28 @@ const Navbar = () => {
   const router = useRouter();
 
   const navItems = [
-    { href: '/', label: 'Rankings' },
-    { href: '/projections', label: 'Projections' },
-    { href: '#', label: 'Matchup Tool' }, // Placeholder
-    { href: '#', label: 'Articles' },     // Placeholder
+    { href: '#', label: 'Blog' },     // Placeholder
+    { href: '#', label: 'Forum' },     // Placeholder
+    { href: '/', label: 'Player Rankings' },
+    { href: '/projections', label: 'Player Projections' },
+    { href: '#', label: 'Tools' }, // Placeholder
+    { href: '/login', label: 'Login' }
   ];
 
   return (
-    <nav className="bg-gray-900 text-white p-4 shadow-lg">
-      <div className="container mx-auto flex justify-between items-center">
-        {/*
-        <button
-          onClick={() => router.push('/')}
-          className="text-3xl font-extrabold text-blue-500 hover:text-blue-400 transition-colors duration-300"
-        >
-          Swishlytics Home
-        </button>
-        */}
-        <div className="flex items-center space-x-6">
+    <nav>
+      <div className="container mx-auto flex justify-center items-center">
+        <div className="flex items-center">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             const isPlaceholder = item.href === '#';
+            
+            // Combine classes conditionally
+            const buttonClass = [
+              'nav-button',
+              isActive ? 'active' : '',
+            ].join(' ');
+
             return (
               <button
                 key={item.label}
@@ -37,16 +38,10 @@ const Navbar = () => {
                     router.push(item.href);
                   }
                 }}
-                className={`px-6 py-3 rounded-full text-lg font-bold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 ${
-                  isActive
-                    ? 'bg-blue-700 text-white'
-                    : isPlaceholder
-                    ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                    : 'bg-blue-500 hover:bg-blue-600 text-white'
-                }`}
+                className={buttonClass}
                 disabled={isPlaceholder}
               >
-                {item.label}
+                <span>{item.label}</span>
               </button>
             );
           })}

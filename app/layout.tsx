@@ -3,7 +3,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
-import Navbar from './components/Navbar';
+import Header from './components/Header';
+import Providers from './components/Providers';
 
 export const metadata: Metadata = {
   title: 'Swishlytics',
@@ -17,9 +18,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
-        <Navbar />
-        <main>{children}</main>
+      <body className="flex flex-col min-h-screen">
+        <Providers>
+          <Header />
+          <main className="flex-grow main-app-container">{children}</main>
+        </Providers>
         <SpeedInsights />
         <Analytics />
       </body>

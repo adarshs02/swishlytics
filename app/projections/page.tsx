@@ -223,10 +223,6 @@ export default function ProjectionsPage() {
 
   return (
     <>
-      <header>
-        <h1>Swishlytics</h1>
-      </header>
-
       <main>
         <h2 id="current-ranking-title">
             Player Projections for 2025-2026 Season

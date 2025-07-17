@@ -213,10 +213,6 @@ export default function Home() {
 
   return (
     <>
-      <header>
-        <h1>Swishlytics</h1>
-      </header>
-
       <main>
         <div className="controls-container">
           <div className="select-container">
