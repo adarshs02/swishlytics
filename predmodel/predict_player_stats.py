@@ -15,6 +15,7 @@ from feature_engineering import (
     create_team_context_features
 )
 from db_connector import get_supabase_client
+import config
 from config import STATS_TO_PROJECT, Z_SCORE_STATS, Z_SCORE_COLUMNS
 
 def predict_stats_for_next_season():
@@ -57,8 +58,20 @@ def predict_stats_for_next_season():
     player_stats_df = create_historical_features(player_stats_df)
     player_stats_df = create_age_and_experience_features(player_stats_df)
     player_stats_df = create_team_context_features(player_stats_df)
-
+    # Filter for players who played in the most recent season to get predictions (active players only)
     df_for_prediction = player_stats_df[player_stats_df['season'] == most_recent_season].copy()
+    print(f"Players from most recent season ({most_recent_season}): {len(df_for_prediction)}")
+    
+    # Apply minimum games and minutes filters
+    df_for_prediction = df_for_prediction[
+        (df_for_prediction['games_played'] >= config.MIN_GAMES_PLAYED) &
+        (df_for_prediction['avg_minutes'] >= config.MIN_AVG_MINUTES)
+    ]
+    print(f"After games/minutes filter: {len(df_for_prediction)}")
+    
+    # Note: player names will be joined later from the players table using player_id
+    
+    print(f"Final active players meeting criteria for prediction: {len(df_for_prediction)}")
 
     missing_features = [f for f in features if f not in df_for_prediction.columns]
     if missing_features:
@@ -92,6 +105,18 @@ def predict_stats_for_next_season():
         df_predictions = pd.concat(all_predictions).sort_index()
     else:
         df_predictions = pd.DataFrame(columns=STATS_TO_PROJECT)
+    
+    # Convert per-36-minute predictions back to per-game stats
+    print("Converting per-36-minute predictions to per-game stats...")
+    per_game_stats = ['points', 'rebounds', 'assists', 'steals', 'blocks', 'turnovers', 'three_pointers_made']
+    
+    for stat in per_game_stats:
+        if stat in df_predictions.columns:
+            # Get the predicted minutes for each player (or use their historical avg_minutes)
+            predicted_minutes = df_predictions['avg_minutes'] if 'avg_minutes' in df_predictions.columns else df_for_prediction['avg_minutes']
+            # Convert from per-36-minute to per-game: (per_36_stat * minutes_per_game) / 36
+            df_predictions[stat] = df_predictions[stat] * (predicted_minutes / 36)
+    
     print("Predictions complete.")
 
     return df_predictions, df_for_prediction, prediction_season, player_stats_df
@@ -225,6 +250,12 @@ def upload_projections_to_db(projections_df, season):
         if 'player_id' not in upload_data.columns:
              raise ValueError("Missing 'player_id' in projections DataFrame.")
 
+        # Replace NaN values with None (null) for JSON compatibility
+        upload_data = upload_data.replace({np.nan: None})
+        
+        # Convert any remaining inf values to None as well
+        upload_data = upload_data.replace([np.inf, -np.inf], None)
+        
         data_to_insert = upload_data.to_dict('records')
 
         response = supabase.table('player_projections').upsert(data_to_insert, on_conflict='player_id,season').execute()
@@ -246,8 +277,21 @@ if __name__ == '__main__':
 
         # Add player info (id, name, team) to the projections
         players_df = fetch_players()
+        if players_df is None or players_df.empty:
+            print("No players found in database. Cannot generate projections.")
+            exit(1)
+            
+        # First merge with prediction data to get player_id, team, age
         projections_with_info = checked_projections.merge(df_for_prediction[['player_id', 'team', 'player_age']], left_index=True, right_index=True)
-        projections_with_info = projections_with_info.merge(players_df[['player_id', 'full_name']], on='player_id', how='left')
+        
+        # Then merge with players table to get names - use inner join to exclude players without names
+        projections_with_info = projections_with_info.merge(players_df[['player_id', 'full_name']], on='player_id', how='inner')
+        
+        # Filter out any remaining rows with NaN names
+        projections_with_info = projections_with_info.dropna(subset=['full_name'])
+        projections_with_info = projections_with_info[projections_with_info['full_name'].str.strip() != '']
+        
+        print(f"Final projections with valid names: {len(projections_with_info)}")
 
         # Calculate z-scores and swish_score on the blended data
         projections_with_scores = calculate_z_scores_and_swish_score(projections_with_info)

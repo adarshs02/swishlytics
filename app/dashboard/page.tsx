@@ -85,8 +85,7 @@ const DashboardPage = () => {
             onMouseOver={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#3b6bff'}
             onMouseOut={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#4f81ff'}
             onClick={() => {
-              // TODO: Navigate to create projection page
-              console.log('Create Projection clicked');
+              router.push('/projections/create');
             }}>
               Create Projection
             </button>

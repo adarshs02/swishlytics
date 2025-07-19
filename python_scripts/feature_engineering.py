@@ -64,18 +64,21 @@ def create_per_minute_stats(df):
         print("'avg_minutes' column is missing or empty. Skipping per-minute stats.")
         return df
 
-    # Avoid division by zero
-    df_filtered = df[df['avg_minutes'] > 0].copy()
-
+    df_with_per_min = df.copy()
     stats_to_normalize = ['points', 'rebounds', 'assists', 'steals', 'blocks', 'turnovers', 'three_pointers_made']
     
     for stat in stats_to_normalize:
-        if stat in df_filtered.columns:
+        if stat in df_with_per_min.columns:
             per_minute_stat_name = f'{stat}_per_36_min'
-            df_filtered[per_minute_stat_name] = (df_filtered[stat] / df_filtered['avg_minutes']) * 36
+            # For players with 0 minutes, set per-36-minute stats to 0
+            # For others, calculate normally
+            df_with_per_min[per_minute_stat_name] = df_with_per_min.apply(
+                lambda row: 0 if row['avg_minutes'] == 0 else (row[stat] / row['avg_minutes']) * 36,
+                axis=1
+            )
 
     print("Successfully created per-36-minute stats.")
-    return df_filtered
+    return df_with_per_min
 
 
 def create_historical_features(df, weights=[0.6, 0.4]):

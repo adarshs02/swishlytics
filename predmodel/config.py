@@ -1,5 +1,7 @@
 # predmodel/config.py
 
+MIN_AVG_MINUTES = 0
+MIN_GAMES_PLAYED = 20
 # Stats to project with the model
 STATS_TO_PROJECT = [
     'points',
